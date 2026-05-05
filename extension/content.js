@@ -4,8 +4,6 @@ let organizationId = ''
 
 const artifactsCache = new Map()
 
-let debugCandidatesLogged = false
-
 async function getOrganizationId() {
 	if (organizationId) return organizationId
 	try {
@@ -668,18 +666,7 @@ function ensureControlsPosition(actionsBar, controlsWrap) {
 
 function injectButtons() {
 	const actionsBar = findActionsBar()
-	if (!actionsBar) {
-		if (!debugCandidatesLogged) {
-			const ids = [...document.querySelectorAll('[data-testid]')]
-				.map((el) => el.dataset.testid)
-				.filter((id) => id && (id.includes('wiggle') || id.includes('action') || id.includes('control') || id.includes('message')))
-			if (ids.length) {
-				console.debug('[ShareClaude] candidate testids:', [...new Set(ids)])
-				debugCandidatesLogged = true
-			}
-		}
-		return
-	}
+	if (!actionsBar) return
 
 	console.debug('[ShareClaude] injecting into:', actionsBar.dataset.testid)
 	injectStyles()
