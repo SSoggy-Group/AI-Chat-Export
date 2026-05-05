@@ -9,10 +9,32 @@ export async function onRequestPost(context) {
     const db = drizzle(context.env.DB);
     try {
         const { title, content } = await context.request.json();
-        if (!title.trim()) {
-            return Response.json({ msg: 'title is required' }, { status: 400 });
+        if (!title || typeof title !== 'string' || !title.trim()) {
+            return Response.json({ msg: 'valid title is required' }, { status: 400 });
         }
-        const [newChat] = await db.insert(chatsSchema).values({ title, content }).returning()
+
+        if (!Array.isArray(content)) {
+            return Response.json({ msg: 'content must be an array' }, { status: 400 });
+        }
+
+        for (const item of content) {
+            if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+                return Response.json({ msg: 'content items must be objects' }, { status: 400 });
+            }
+            if (typeof item.source !== 'string' || !['user', 'claude'].includes(item.source)) {
+                return Response.json({ msg: 'content item source must be "user" or "claude"' }, { status: 400 });
+            }
+            if (typeof item.message !== 'string') {
+                return Response.json({ msg: 'content item message must be a string' }, { status: 400 });
+            }
+        }
+
+        const sanitizedContent = content.map(item => ({
+            source: item.source,
+            message: item.message
+        }));
+
+        const [newChat] = await db.insert(chatsSchema).values({ title, content: sanitizedContent }).returning()
         return Response.json({
             id: newChat.id,
         }, { status: 201 });
