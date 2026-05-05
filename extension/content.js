@@ -245,13 +245,15 @@ function convertToMarkdown(title, messages) {
 }
 
 function convertToText(title, messages) {
-	let txt = `${title}\n${'='.repeat(title.length)}\n\n`
-	messages.forEach(({ source, message }) => {
-		const role = source === 'user' ? 'You' : 'Claude'
-		const plain = markdownToPlainText(message)
-		txt += `${role}:\n${plain}\n\n`
-	})
-	return txt
+	const header = `${title}\n${'='.repeat(title.length)}\n\n`
+	const body = messages
+		.map(({ source, message }) => {
+			const role = source === 'user' ? 'You' : 'Claude'
+			const plain = markdownToPlainText(message)
+			return `${role}:\n${plain}\n\n`
+		})
+		.join('')
+	return header + body
 }
 
 function convertToHTML(title, messages) {
