@@ -281,12 +281,29 @@ function convertToHTML(title, messages) {
 				if (lines.length < 2) return block
 				const sep = lines[1]
 				if (!/^[\s|:\-]+$/.test(sep)) return block
-				const headers = lines[0].split('|').map(s => s.trim()).filter(Boolean)
-				const rows = lines.slice(2).map(l => l.split('|').map(s => s.trim()).filter(Boolean))
-				const thead = `<thead><tr>${headers.map(h => `<th>${applyInline(h)}</th>`).join('')}</tr></thead>`
-				const tbody = rows.length
-					? `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${applyInline(c)}</td>`).join('')}</tr>`).join('\n')}</tbody>`
-					: ''
+
+				const parseRegex = /[^|\s](?:[^|]*[^|\s])?/g
+				const headers = lines[0].match(parseRegex) || []
+				let theadInner = ''
+				for (let i = 0; i < headers.length; i++) {
+					theadInner += `<th>${applyInline(headers[i])}</th>`
+				}
+				const thead = `<thead><tr>${theadInner}</tr></thead>`
+
+				let tbodyInner = ''
+				for (let i = 2; i < lines.length; i++) {
+					const rowMatch = lines[i].match(parseRegex)
+					if (rowMatch) {
+						let trInner = ''
+						for (let j = 0; j < rowMatch.length; j++) {
+							trInner += `<td>${applyInline(rowMatch[j])}</td>`
+						}
+						tbodyInner += `<tr>${trInner}</tr>\n`
+					} else {
+						tbodyInner += `<tr></tr>\n`
+					}
+				}
+				const tbody = tbodyInner ? `<tbody>${tbodyInner.slice(0, -1)}</tbody>` : ''
 				return `<table>${thead}${tbody}</table>`
 			}
 		)
