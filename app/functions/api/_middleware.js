@@ -1,11 +1,9 @@
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': '*',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Max-Age': '86400'
-};
+import { getCorsHeaders } from './utils';
 
 export async function onRequest(context) {
+    const origin = context.request.headers.get('Origin');
+    const corsHeaders = getCorsHeaders(origin);
+
     if (context.request.method === 'OPTIONS') {
         return new Response(null, {
             headers: corsHeaders,
@@ -14,7 +12,11 @@ export async function onRequest(context) {
     }
 
     const response = await context.next();
-    Object.entries(corsHeaders).forEach(([key, value]) => response.headers.set(key, value));
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+        if (value) {
+            response.headers.set(key, value);
+        }
+    });
 
     return response;
 }

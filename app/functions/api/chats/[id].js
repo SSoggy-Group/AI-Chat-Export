@@ -1,20 +1,17 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { chatsSchema } from '../../../database/schema';
-import { getReadableError } from '../utils';
+import { getReadableError, getCorsHeaders } from '../utils';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-};
-
-export async function onRequestOptions() {
-    return new Response(null, { headers: corsHeaders });
+export async function onRequestOptions(context) {
+    const origin = context.request.headers.get('Origin');
+    return new Response(null, { headers: getCorsHeaders(origin) });
 }
 
 export async function onRequestGet(context) {
     const id = context.params.id;
+    const origin = context.request.headers.get('Origin');
+    const corsHeaders = getCorsHeaders(origin);
     try {
         const db = drizzle(context.env.DB);
         const [chat] = await db.select().from(chatsSchema).where(eq(chatsSchema.id, id)).limit(1)
