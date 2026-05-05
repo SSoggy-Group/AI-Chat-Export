@@ -35,7 +35,6 @@ export async function onRequestGet(context) {
             },
         });
     } catch (error) {
-        console.log('Error getting raw chat:', error);
         return new Response(getReadableError(error), { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
 }
