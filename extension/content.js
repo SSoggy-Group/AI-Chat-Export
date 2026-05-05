@@ -243,13 +243,13 @@ function convertToMarkdown(title, messages) {
 }
 
 function convertToText(title, messages) {
-	let txt = `${title}\n${'='.repeat(title.length)}\n\n`
+	const result = [`${title}\n${'='.repeat(title.length)}\n\n`]
 	messages.forEach(({ source, message }) => {
 		const role = source === 'user' ? 'You' : 'Claude'
 		const plain = markdownToPlainText(message)
-		txt += `${role}:\n${plain}\n\n`
+		result.push(`${role}:\n${plain}\n\n`)
 	})
-	return txt
+	return result.join('')
 }
 
 function convertToHTML(title, messages) {
