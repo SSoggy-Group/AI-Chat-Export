@@ -573,9 +573,7 @@ function convertToDOCX(title, messages) {
 
 		// message lines
 		const lines = markdownToPlainText(message).split('\n')
-		lines.forEach((line) => {
-			paragraphs += `<w:p><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXML(line)}</w:t></w:r></w:p>`
-		})
+		paragraphs += lines.map(line => `<w:p><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXML(line)}</w:t></w:r></w:p>`).join('')
 
 		// separator
 		paragraphs += `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`
