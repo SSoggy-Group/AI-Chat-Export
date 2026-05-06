@@ -31,9 +31,9 @@ describe('chats/[id].js onRequestGet', () => {
             }
         };
 
-        global.Response = {
+        vi.stubGlobal('Response', {
             json: vi.fn().mockImplementation((data, init) => ({ data, init }))
-        };
+        });
 
         consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     });
