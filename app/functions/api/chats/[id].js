@@ -21,7 +21,6 @@ export async function onRequestGet(context) {
 
         return Response.json(chat, { headers: corsHeaders });
     } catch (error) {
-        console.log("Error getting a chat: ", error)
         return Response.json({ msg: getReadableError(error) }, { status: 500, headers: corsHeaders });
     }
 }
