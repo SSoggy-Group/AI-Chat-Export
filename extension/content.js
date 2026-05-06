@@ -668,7 +668,6 @@ function injectButtons() {
 	const actionsBar = findActionsBar()
 	if (!actionsBar) return
 
-	console.debug('[ShareClaude] injecting into:', actionsBar.dataset.testid)
 	injectStyles()
 
 	const existingControls = document.querySelector('.sc-controls')
