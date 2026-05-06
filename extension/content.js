@@ -296,7 +296,7 @@ function convertToHTML(title, messages) {
 					if (rowMatch) {
 						let trInner = ''
 						for (let j = 0; j < rowMatch.length; j++) {
-							trInner += `<td>${applyInline(rowMatch[j])}</td>`
+							trInner += `<td>${applyInline(esc(rowMatch[j]))}</td>`
 						}
 						tbodyInner += `<tr>${trInner}</tr>\n`
 					} else {
