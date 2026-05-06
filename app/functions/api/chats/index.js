@@ -9,8 +9,8 @@ export async function onRequestPost(context) {
     const db = drizzle(context.env.DB);
     try {
         const { title, content } = await context.request.json();
-        if (!title || typeof title !== 'string' || !title.trim()) {
-            return Response.json({ msg: 'valid title is required' }, { status: 400 });
+        if (!title || typeof title !== 'string' || !title.trim() || title.length > 512) {
+            return Response.json({ msg: 'valid title (max 512 chars) is required' }, { status: 400 });
         }
 
         if (!Array.isArray(content)) {
