@@ -27,7 +27,7 @@ describe('chats/[id].js onRequestGet', () => {
             params: { id: 'test-id' },
             env: { DB: {} },
             request: {
-                headers: new Map([['Origin', 'https://claude.ai']])
+                headers: new Headers([['Origin', 'https://claude.ai']])
             }
         };
 
