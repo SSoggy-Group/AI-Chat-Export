@@ -286,7 +286,7 @@ function convertToHTML(title, messages) {
 				const headers = lines[0].match(parseRegex) || []
 				let theadInner = ''
 				for (let i = 0; i < headers.length; i++) {
-					theadInner += `<th>${applyInline(headers[i])}</th>`
+					theadInner += `<th>${applyInline(esc(headers[i]))}</th>`
 				}
 				const thead = `<thead><tr>${theadInner}</tr></thead>`
 
