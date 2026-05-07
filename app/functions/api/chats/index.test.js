@@ -38,7 +38,7 @@ describe('onRequestPost', () => {
     });
 
     it('should create a chat and return 201 with id', async () => {
-        const context = createMockContext({ title: 'Test Title', content: 'Test Content' });
+        const context = createMockContext({ title: 'Test Title', content: [{ source: 'user', message: 'Hello' }] });
         mockReturning.mockResolvedValue([{ id: 'chat-123' }]);
 
         const response = await onRequestPost(context);
@@ -47,25 +47,25 @@ describe('onRequestPost', () => {
         expect(response.status).toBe(201);
         expect(data).toEqual({ id: 'chat-123' });
         expect(mockInsert).toHaveBeenCalled();
-        expect(mockValues).toHaveBeenCalledWith({ title: 'Test Title', content: 'Test Content' });
+        expect(mockValues).toHaveBeenCalledWith({ title: 'Test Title', content: [{ source: 'user', message: 'Hello' }] });
     });
 
     it('should return 400 if title is missing or empty', async () => {
-        const context = createMockContext({ title: '   ', content: 'Test Content' });
+        const context = createMockContext({ title: '   ', content: [{ source: 'user', message: 'Hello' }] });
 
         const response = await onRequestPost(context);
         const data = await response.json();
 
         expect(response.status).toBe(400);
-        expect(data).toEqual({ msg: 'title is required' });
+        expect(data).toEqual({ msg: 'valid title (max 512 chars) is required' });
         expect(mockInsert).not.toHaveBeenCalled();
     });
 
     it('should return 500 on database error', async () => {
-        const context = createMockContext({ title: 'Test Title', content: 'Test Content' });
+        const context = createMockContext({ title: 'Test Title', content: [{ source: 'user', message: 'Hello' }] });
         mockReturning.mockRejectedValue(new Error('DB Error'));
 
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const response = await onRequestPost(context);
         const data = await response.json();

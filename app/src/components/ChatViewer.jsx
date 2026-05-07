@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 
 const PROD_API_ORIGIN = 'https://shareclaude.pages.dev';
 
-function isLocalDevHost() {
+export function isLocalDevHost() {
     const { hostname } = window.location;
     return hostname === 'localhost' || hostname === '127.0.0.1';
 }
