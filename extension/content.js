@@ -807,3 +807,9 @@ if (document.readyState === 'complete') {
 } else {
 	window.addEventListener('load', init)
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+	module.exports = {
+		convertToJSON,
+	}
+}
