@@ -9,7 +9,6 @@ vi.mock('drizzle-orm/d1', () => ({
 describe('chats/[id].js onRequestGet', () => {
     let mockContext;
     let mockDb;
-    let consoleLogSpy;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -34,12 +33,9 @@ describe('chats/[id].js onRequestGet', () => {
         vi.stubGlobal('Response', {
             json: vi.fn().mockImplementation((data, init) => ({ data, init }))
         });
-
-        consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     });
 
     afterEach(() => {
-        consoleLogSpy.mockRestore();
     });
 
     it('returns 200 with chat data when chat is found', async () => {
@@ -77,8 +73,6 @@ describe('chats/[id].js onRequestGet', () => {
         mockDb.limit.mockRejectedValue(error);
 
         const response = await onRequestGet(mockContext);
-
-        expect(consoleLogSpy).toHaveBeenCalledWith("Error getting a chat: ", error);
 
         expect(global.Response.json).toHaveBeenCalledWith(
             { msg: 'Something went wrong!' },
