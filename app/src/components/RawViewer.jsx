@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { getBotName } from './BotAvatar';
 
 export function formatChatAsText(chatData) {
     const lines = [`# ${chatData.title}`, ''];
     const messages = Array.isArray(chatData.content) ? chatData.content : [];
-    for (const { source, message } of messages) {
-        const role = source === 'user' ? 'You' : 'Claude';
-        lines.push(`## ${role}`, '', message ?? '', '', '---', '');
+    for (const { source, message, thinking } of messages) {
+        const role = source === 'user' || source === 'human' ? 'You' : getBotName(source);
+        lines.push(`## ${role}`, '');
+        if (thinking) {
+            lines.push('> **Thinking:**', ...thinking.split('\n').map(l => `> ${l}`), '');
+        }
+        lines.push(message ?? '', '', '---', '');
     }
     return lines.join('\n');
 }

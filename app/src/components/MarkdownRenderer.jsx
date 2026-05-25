@@ -6,7 +6,7 @@ import mermaid from 'mermaid';
 import { useEffect, useRef } from 'react';
 import '../../../extension/excerpt-utils.js';
 
-const splitOnExcerpts = (text) => globalThis.AI-Chat-ExportExcerptUtils.splitTextOnExcerpts(text);
+const splitOnExcerpts = (text) => globalThis.AIChatExportExcerptUtils.splitTextOnExcerpts(text);
 
 mermaid.initialize({
     startOnLoad: true,

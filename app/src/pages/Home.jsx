@@ -4,6 +4,13 @@ import thumbnail from '../assets/thumbnail.webp';
 import LiteYouTubeEmbed from 'react-lite-youtube-embed';
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
+const SUPPORTED_BOTS = [
+    { name: 'Claude', color: '#D97757', url: 'https://claude.ai' },
+    { name: 'ChatGPT', color: '#10A37F', url: 'https://chatgpt.com' },
+    { name: 'DeepSeek', color: '#4D6BFE', url: 'https://chat.deepseek.com' },
+    { name: 'Mistral', color: '#FF7000', url: 'https://chat.mistral.ai' },
+];
+
 function Home() {
     return (
         <div className="min-h-screen overflow-x-hidden text-gray-200">
@@ -11,14 +18,36 @@ function Home() {
                 {/* Hero Section */}
                 <div className="max-w-4xl px-4 pt-12 pb-4 mx-auto text-center sm:px-8 sm:pt-20 sm:pb-6">
                     <h1 className="mb-6 text-4xl font-bold sm:text-6xl">
-                        Share Your Claude Chats
+                        Share Your AI Chats
                         <br />
                         <span className="text-aiChatExport-accent">With One Click</span>
                     </h1>
                     <p className="max-w-2xl mx-auto mb-4 text-xl text-gray-400">
-                        Instantly share your Claude.AI conversations with anyone. A simple browser extension
-                        that makes collaboration effortless.
+                        Instantly share conversations from Claude, ChatGPT, DeepSeek, and Mistral with anyone.
+                        A simple browser extension that makes collaboration effortless.
                     </p>
+
+                    {/* Supported bots badges */}
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        {SUPPORTED_BOTS.map((bot) => (
+                            <a
+                                key={bot.name}
+                                href={bot.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 hover:scale-105"
+                                style={{
+                                    color: bot.color,
+                                    borderColor: `${bot.color}40`,
+                                    backgroundColor: `${bot.color}10`,
+                                }}
+                            >
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: bot.color }} />
+                                {bot.name}
+                            </a>
+                        ))}
+                    </div>
+
                     <div className="flex flex-col items-center gap-4">
                         <div className="flex flex-col gap-4 sm:flex-row">
                             <a
@@ -57,7 +86,7 @@ function Home() {
                         <LiteYouTubeEmbed
                             id="fhiBt878T34"
                             thumbnail={thumbnail}
-                            title="AI-Chat-Export - Browser Extension for Sharing Claude Conversations"
+                            title="AI-Chat-Export - Browser Extension for Sharing AI Conversations"
                         />
                     </div>
                 </div>
@@ -71,14 +100,14 @@ function Home() {
                                     <Link2 className="w-6 h-6 text-aiChatExport-accent" />
                                 </div>
                                 <h3 className="mb-2 text-xl font-semibold">One-Click Sharing</h3>
-                                <p className="text-gray-400">Share your entire Claude conversation with a single click, maintaining all formatting and context.</p>
+                                <p className="text-gray-400">Share your entire AI conversation with a single click, maintaining all formatting and context.</p>
                             </div>
                             <div className="p-6 text-center rounded-lg bg-aiChatExport-backgroundLight">
                                 <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-lg bg-aiChatExport-background">
                                     <Chrome className="w-6 h-6 text-aiChatExport-accent" />
                                 </div>
-                                <h3 className="mb-2 text-xl font-semibold">Seamless Integration</h3>
-                                <p className="text-gray-400">Integrates perfectly with Claude.AI&apos;s interface, providing a native sharing experience.</p>
+                                <h3 className="mb-2 text-xl font-semibold">Multi-Bot Support</h3>
+                                <p className="text-gray-400">Works with Claude, ChatGPT, DeepSeek, and Mistral Le Chat — all from one extension.</p>
                             </div>
                             <div className="p-6 text-center rounded-lg bg-aiChatExport-backgroundLight">
                                 <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-lg bg-aiChatExport-background">
