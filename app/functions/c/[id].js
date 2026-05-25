@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { chatsSchema } from '../../database/schema';
 
 // List of known AI Live-Fetching Bots (User-Requested Bots)
-const AI_BOT_REGEX = /ChatGPT-User|PerplexityBot|Claude-Web|Meta-ExternalFetcher|OAI-SearchBot/i;
+const AI_BOT_REGEX = /bot|spider|crawl|chatgpt|perplexity|claude|meta|anthropic|omgili|facebook|twitter|slack|discord/i;
 
 export async function onRequestGet(context) {
     const request = context.request;
@@ -85,10 +85,10 @@ export async function onRequestGet(context) {
                     element.setAttribute('content', `Read the conversation: ${safeTitle}`);
                 }
             })
-            // 3. Inject <noscript> tag into the <body> for crawlers that parse HTML but don't execute JS
+            // 3. Inject text directly into the <body> for all crawlers
             .on('body', {
                 append(element) {
-                    element.append(`<noscript><div style="padding:20px; white-space:pre-wrap; font-family:monospace;">${safeMarkdown}</div></noscript>`, { html: true });
+                    element.append(`<div id="ai-chat-raw-data" style="display:none; white-space:pre-wrap;">${safeMarkdown}</div>`, { html: true });
                 }
             });
 
