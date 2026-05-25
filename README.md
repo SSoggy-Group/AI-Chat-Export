@@ -1,30 +1,34 @@
 # [AI-Chat-Export](https://ai.ssoggy.me)
 
-Browser extension to share and export your [Claude](https://claude.ai) chats with one click.
+Browser extension to share and export your AI chats from Claude, ChatGPT, DeepSeek, Mistral, Gemini, Qwen, Meta AI, and Perplexity with one click.
 
-[![Visit AI-Chat-Export](https://img.shields.io/badge/Visit-AI-Chat-Export-blue.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNEOTc3NTciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zaGFyZS0yIj48Y2lyY2xlIGN4PSIxOCIgY3k9IjUiIHI9IjMiLz48Y2lyY2xlIGN4PSI2IiBjeT0iMTIiIHI9IjMiLz48Y2lyY2xlIGN4PSIxOCIgY3k9IjE5IiByPSIzIi8+PGxpbmUgeDE9IjguNTkiIHgyPSIxNS40MiIgeTE9IjEzLjUxIiB5Mj0iMTcuNDkiLz48bGluZSB4MT0iMTUuNDEiIHgyPSI4LjU5IiB5MT0iNi41MSIgeTI9IjEwLjQ5Ii8+PC9zdmc+)](https://ai.ssoggy.me)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/pcpjdbnjhgofgjgegodlnebdnmiddmaa?color=blue&label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/pcpjdbnjhgofgjgegodlnebdnmiddmaa)
+[![Firefox Add-ons](https://img.shields.io/amo/v/ai-chat-export?color=orange&label=Firefox%20Add-ons&logo=firefox&logoColor=white)](https://addons.mozilla.org/firefox/addon/ai-chat-export/)
+[![GitHub Release](https://img.shields.io/github/v/release/SSoggy-Group/AI-Chat-Export?color=success&logo=github)](https://github.com/SSoggy-Group/AI-Chat-Export/releases/latest)
+[![Website](https://img.shields.io/badge/Website-ai.ssoggy.me-blue?logo=vercel)](https://ai.ssoggy.me)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- One-click sharing of Claude AI conversations
+- One-click sharing of AI conversations from multiple platforms
 - Instant URL generation
 - Supports syntax highlighting for code and artifacts, including Mermaid and JSON
-- Works directly with Claude's web interface
+- Works directly with the native web interfaces of supported AI platforms
 
 ## How It Works
 
-When you share a conversation, the extension stores the conversation in AI-Chat-Export's database, not Claude's. Each conversation gets a unique URL, similar to an unlisted YouTube video. The URL can be shared with anyone, but it won't show up in Google search results.
-Shared conversations are served from AI-Chat-Export's database, not directly from Claude.
+When you share a conversation, the extension stores the conversation in AI-Chat-Export's database, not the original AI platform's database. Each conversation gets a unique URL, similar to an unlisted YouTube video. The URL can be shared with anyone, but it won't show up in Google search results.
+Shared conversations are served from AI-Chat-Export's database.
 
 *Important: While the URL is private and not searchable, anyone with the URL can still view the conversation. Please avoid sharing sensitive or personal information.*
 
 ## How to Use
 
-1. Open [Claude](https://claude.ai) in your browser
-2. Start or continue a conversation with Claude
-3. Click the **AI-Chat-Export** button in the top-right corner (next to Claude's native Share button, separated by a divider)
+1. Open a supported AI chat interface (e.g., [Claude](https://claude.ai), [ChatGPT](https://chatgpt.com)) in your browser
+2. Start or continue a conversation
+3. Click the **AI-Chat-Export** button in the chat interface or use the extension popup
 4. A menu appears with options:
-   - **Share to AI-Chat-Export:** Uploads the conversation and copies the link to your clipboard as an alternative to Claude's native share option
+   - **Share to AI-Chat-Export:** Uploads the conversation and copies the link to your clipboard
    - **Export:** Downloads the conversation as HTML, Markdown, plain text, JSON, or Word (.docx)
 
 ## Tech Stack
@@ -42,7 +46,7 @@ For development/debugging:
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/maaren/ai-chat-export.git
+   git clone https://github.com/SSoggy-Group/AI-Chat-Export.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
@@ -56,7 +60,7 @@ For development/debugging:
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/maaren/ai-chat-export.git
+   git clone https://github.com/SSoggy-Group/AI-Chat-Export.git
    ```
 
 2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
@@ -80,18 +84,23 @@ Contributions are welcome! Feel free to:
 ## Star History
 
 <!-- markdownlint-disable MD033 -->
-<a href="https://www.star-history.com/?repos=maaren%2Fai-chat-export&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=SSoggy-Group%2FAI-Chat-Export&type=date&legend=top-left">
  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=maaren/ai-chat-export&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=maaren/ai-chat-export&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=maaren/ai-chat-export&type=date&legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&legend=top-left" />
  </picture>
 </a>
 <!-- markdownlint-enable MD033 -->
 
-Made with ☕ for the Claude community
+Made with ☕ for the AI community
 
 
 NOTE: 
 I didn't make the core of thi sproject, but the repo owner didn't want to merge my pull request that would fix the repo, so I guess use this fork now
 about usage of ai: gemini helped me with parts of my version of ai-chat-export
+
+## Acknowledgements
+
+- Special thanks to [rohit1kumar's shareclaude](https://github.com/rohit1kumar/shareclaude) for the original backend and website foundation that this extended fork builds upon.
+- Special thanks to [ai-chat-exporter by Rat-S](https://github.com/Rat-S/ai-chat-exporter) for the original injection and downloading logic used for several of the supported sites (except Claude and Grok).
