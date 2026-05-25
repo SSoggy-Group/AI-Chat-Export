@@ -101,4 +101,4 @@ English
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| v0.4.0 | 2026-05-25 | Universal extension update adding multi-bot support for 8 AI platforms (Claude, ChatGPT, Gemini, DeepSeek, Mistral, Qwen, Meta AI, Perplexity) and visual refresh. | Draft |
+| v1.0.0 | 2026-05-25 | Universal extension release adding multi-bot support for 8 AI platforms (Claude, ChatGPT, Gemini, DeepSeek, Mistral, Qwen, Meta AI, Perplexity) and visual refresh. | Draft |
