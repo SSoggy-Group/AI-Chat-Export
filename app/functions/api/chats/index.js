@@ -22,7 +22,7 @@ export async function onRequestPost(context) {
             if (typeof item !== 'object' || item === null || Array.isArray(item)) {
                 return Response.json({ msg: 'content items must be objects' }, { status: 400 });
             }
-            const validSources = ['user', 'claude', 'chatgpt', 'deepseek', 'mistral'];
+            const validSources = ['user', 'claude', 'chatgpt', 'deepseek', 'mistral', 'gemini', 'qwen', 'meta', 'perplexity', 'google'];
             if (typeof item.source !== 'string' || !validSources.includes(item.source)) {
                 return Response.json({ msg: `content item source must be one of: ${validSources.join(', ')}` }, { status: 400 });
             }

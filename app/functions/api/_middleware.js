@@ -14,7 +14,7 @@ export async function onRequest(context) {
         'Vary': 'Origin',
     };
 
-    if (ALLOWED_ORIGINS.includes(origin)) {
+    if (ALLOWED_ORIGINS.includes(origin) || origin?.startsWith('chrome-extension://') || origin?.startsWith('moz-extension://')) {
         corsHeaders['Access-Control-Allow-Origin'] = origin;
     }
 
