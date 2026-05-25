@@ -29,3 +29,6 @@ assets
 *.zip
 temp
 *.tmp
+
+# Examples
+examples/
