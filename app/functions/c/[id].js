@@ -97,10 +97,11 @@ export async function onRequestGet(context) {
                     element.setAttribute('content', `Read the conversation: ${safeTitle}`);
                 }
             })
-            // 3. Inject text directly into the <body> for all crawlers
-            .on('body', {
-                append(element) {
-                    element.append(`<div id="ai-chat-raw-data" style="display:none; white-space:pre-wrap;">${safeMarkdown}</div>`, { html: true });
+            // 3. Inject text directly into the <div id="root"> so all scrapers see it as normal text.
+            // When a human visits, React will instantly overwrite this div with the UI.
+            .on('div#root', {
+                element(element) {
+                    element.setInnerContent(`<main style="padding: 2rem; font-family: sans-serif; white-space: pre-wrap;"><h1>${safeTitle}</h1>\n\n${safeMarkdown}</main>`, { html: true });
                 }
             });
 
