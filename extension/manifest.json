@@ -12,7 +12,9 @@
         "https://gemini.google.com/*",
         "https://chat.qwenlm.ai/*",
         "https://www.meta.ai/*",
+        "https://meta.ai/*",
         "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*",
         "https://www.google.com/*",
         "https://ai.ssoggy.me/*"
     ],
@@ -35,7 +37,9 @@
                 "https://gemini.google.com/*",
                 "https://chat.qwenlm.ai/*",
                 "https://www.meta.ai/*",
+                "https://meta.ai/*",
                 "https://www.perplexity.ai/*",
+                "https://perplexity.ai/*",
                 "https://www.google.com/*"
             ],
             "js": [
@@ -61,7 +65,9 @@
                 "https://gemini.google.com/*",
                 "https://chat.qwenlm.ai/*",
                 "https://www.meta.ai/*",
+                "https://meta.ai/*",
                 "https://www.perplexity.ai/*",
+                "https://perplexity.ai/*",
                 "https://www.google.com/*"
             ]
         }
