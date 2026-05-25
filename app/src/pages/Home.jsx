@@ -9,6 +9,10 @@ const SUPPORTED_BOTS = [
     { name: 'ChatGPT', color: '#10A37F', url: 'https://chatgpt.com' },
     { name: 'DeepSeek', color: '#4D6BFE', url: 'https://chat.deepseek.com' },
     { name: 'Mistral', color: '#FF7000', url: 'https://chat.mistral.ai' },
+    { name: 'Gemini', color: '#1A73E8', url: 'https://gemini.google.com' },
+    { name: 'Qwen', color: '#6D28D9', url: 'https://chat.qwenlm.ai' },
+    { name: 'Meta AI', color: '#0668E1', url: 'https://www.meta.ai' },
+    { name: 'Perplexity', color: '#22B8CD', url: 'https://www.perplexity.ai' },
 ];
 
 function Home() {
@@ -23,7 +27,7 @@ function Home() {
                         <span className="text-aiChatExport-accent">With One Click</span>
                     </h1>
                     <p className="max-w-2xl mx-auto mb-4 text-xl text-gray-400">
-                        Instantly share conversations from Claude, ChatGPT, DeepSeek, and Mistral with anyone.
+                        Instantly share conversations from Claude, ChatGPT, DeepSeek, Mistral, Gemini, Qwen, Meta AI, and Perplexity with anyone.
                         A simple browser extension that makes collaboration effortless.
                     </p>
 
@@ -107,7 +111,7 @@ function Home() {
                                     <Chrome className="w-6 h-6 text-aiChatExport-accent" />
                                 </div>
                                 <h3 className="mb-2 text-xl font-semibold">Multi-Bot Support</h3>
-                                <p className="text-gray-400">Works with Claude, ChatGPT, DeepSeek, and Mistral Le Chat — all from one extension.</p>
+                                <p className="text-gray-400">Works with Claude, ChatGPT, DeepSeek, Mistral, Gemini, Qwen, Meta AI, and Perplexity — all from one extension.</p>
                             </div>
                             <div className="p-6 text-center rounded-lg bg-aiChatExport-backgroundLight">
                                 <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-lg bg-aiChatExport-background">
