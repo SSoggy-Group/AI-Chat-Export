@@ -2,8 +2,8 @@
 
 Browser extension to share and export your AI chats from Claude, ChatGPT, DeepSeek, Mistral, Gemini, Qwen, Meta AI, and Perplexity with one click.
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/pcpjdbnjhgofgjgegodlnebdnmiddmaa?color=blue&label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/pcpjdbnjhgofgjgegodlnebdnmiddmaa)
-[![Firefox Add-ons](https://img.shields.io/amo/v/ai-chat-export?color=orange&label=Firefox%20Add-ons&logo=firefox&logoColor=white)](https://addons.mozilla.org/firefox/addon/ai-chat-export/)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/pcpjdbnjhgofgjgegodlnebdnmiddmaa?color=blue&label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white)](https://example.com/)
+[![Firefox Add-ons](https://img.shields.io/amo/v/ai-chat-export?color=orange&label=Firefox%20Add-ons&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/ai-chat-export-share/)
 [![GitHub Release](https://img.shields.io/github/v/release/SSoggy-Group/AI-Chat-Export?color=success&logo=github)](https://github.com/SSoggy-Group/AI-Chat-Export/releases/latest)
 [![Website](https://img.shields.io/badge/Website-ai.ssoggy.me-blue?logo=vercel)](https://ai.ssoggy.me)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
