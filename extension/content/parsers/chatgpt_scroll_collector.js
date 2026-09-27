@@ -89,7 +89,7 @@ export function findChatGPTScrollRoot(turns = [], doc = document) {
  * @param {Object} options - Collection dependencies and render timing.
  * @param {Element[]} [options.turns=[]] - Legacy turn list; scanning requires a queryable document.
  * @param {Element|null} options.scrollRoot - Container to scroll when its content overflows.
- * @param {function(Element): ({role: string, content: string, key?: string}|null)} options.extractMessage - Reads a turn or role element.
+ * @param {function(Element): ({role: string, content: string, key?: string|Element}|null)} options.extractMessage - Reads a turn or role element.
  * @param {function(number): Promise<void>} [options.waitForRender] - Waits after scrolling; defaults to a timer.
  * @param {number} [options.renderWaitMs=140] - Delay in milliseconds between scrolling and scanning.
  * @param {Document|null} [options.doc] - Document to scan; defaults to the global document when available.
@@ -129,12 +129,28 @@ export async function collectMountedTurnMessages({
       doc.querySelectorAll('[data-message-author-role]') || []
     ).filter((el) => !el.closest?.(TURN_SELECTOR));
 
-    standaloneRoleEls.forEach((el, fallbackIdx) => {
+    // Place standalone nodes between their neighboring turns on the same index scale.
+    const mounted = [...currentTurns, ...standaloneRoleEls].sort((a, b) => {
+      const position = a.compareDocumentPosition?.(b) || 0;
+      return position & 4 ? -1 : position & 2 ? 1 : 0;
+    });
+    standaloneRoleEls.forEach((el) => {
       const msg = extractMessage(el);
       if (msg && msg.content) {
-        const key = messageKey(msg);
+        const key = msg.key || el;
         if (!messagesMap.has(key)) {
-          messagesMap.set(key, { index: messagesMap.size || fallbackIdx, message: publicMessage(msg) });
+          const position = mounted.indexOf(el);
+          const previous = mounted.slice(0, position).findLast((node) => currentTurns.includes(node));
+          const next = mounted.slice(position + 1).find((node) => currentTurns.includes(node));
+          const start = previous ? mounted.indexOf(previous) : -1;
+          const end = next ? mounted.indexOf(next) : mounted.length;
+          const fraction = (position - start) / (end - start);
+          const previousIndex = getConversationTurnIndex(previous);
+          const nextIndex = getConversationTurnIndex(next);
+          const index = Number.isFinite(previousIndex)
+            ? previousIndex + fraction * (Number.isFinite(nextIndex) ? nextIndex - previousIndex : 1)
+            : Number.isFinite(nextIndex) ? nextIndex - 1 + fraction : messagesMap.size;
+          messagesMap.set(key, { index, message: publicMessage(msg) });
         }
       }
     });

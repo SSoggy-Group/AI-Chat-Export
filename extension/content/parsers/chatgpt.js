@@ -67,17 +67,26 @@ export class ChatGPTParser extends ChatParser {
       .trim();
   }
 
-  getMessageKey(container, roleElement, role, content) {
+  getMessageKey(container, roleElement, role) {
     const idElement =
       roleElement?.closest?.('[data-message-id]') || container.querySelector?.('[data-message-id]');
     const messageId = idElement?.getAttribute('data-message-id');
     if (messageId) return messageId;
 
     const turnEl = container.closest?.(TURN_SELECTOR) || roleElement?.closest?.(TURN_SELECTOR);
-    const turnId = container.getAttribute?.('data-testid') || turnEl?.getAttribute?.('data-testid');
+    const turnId = turnEl?.getAttribute?.('data-testid');
     if (turnId) return `${turnId}:${role}`;
 
-    return `${role}:${content.replace(/\s+/g, ' ').trim()}`;
+    const item = container.closest?.('[data-item-index], [data-index], [data-virtual-list-item-key]');
+    if (item) {
+      const attribute = ['data-item-index', 'data-index', 'data-virtual-list-item-key']
+        .find((name) => item.hasAttribute(name));
+      const siblings = Array.from(item.querySelectorAll('[data-message-author-role]'));
+      return `${attribute}:${item.getAttribute(attribute)}:${role}:${siblings.indexOf(roleElement)}`;
+    }
+
+    // Without a stable ID, only repeated scans of the same node are duplicates.
+    return roleElement || container;
   }
 
   extractAttachments(container) {
@@ -195,7 +204,7 @@ export class ChatGPTParser extends ChatParser {
     return {
       role,
       content,
-      key: this.getMessageKey(container, roleElement, role, content),
+      key: this.getMessageKey(container, roleElement, role),
     };
   }
 

@@ -24,9 +24,13 @@ export class DeepSeekParser extends ChatParser {
           '.ds-message, [class*="ds-message"], [data-virtual-list-item-key], .ds-message-row, .message-row',
         ),
       );
-      // Keep only leaf containers so outer wrappers and inner elements aren't both processed
-      const messageContainers = rawContainers.filter(
-        (el) => !rawContainers.some((other) => other !== el && el.contains(other)),
+      // Prefer complete message roots over matching toolbar/content descendants.
+      const messageRoots = rawContainers.filter((el) => el.matches('.ds-message'));
+      const candidates = rawContainers.filter((el) =>
+        el.matches('.ds-message') || !messageRoots.some((root) => root.contains(el)),
+      );
+      const messageContainers = candidates.filter(
+        (el) => !candidates.some((other) => other !== el && el.contains(other)),
       );
 
       if (messageContainers.length > 0) {

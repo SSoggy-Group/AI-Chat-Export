@@ -157,7 +157,7 @@ export class ClaudeParser extends ChatParser {
 
   /**
    * Collects mounted messages and artifacts while scrolling, then restores the scroll position.
-   * Deduplicates repeated scans by role and content and retains first-seen order.
+   * Refreshes candidates by node or virtual-item identity and retains first-seen order.
    * @returns {Promise<{title: string, messages: Array<{role: string, content: string}>, metadata: Record<string, string>}>}
    */
   async parseFromDOM() {
@@ -194,9 +194,7 @@ export class ClaudeParser extends ChatParser {
       });
     };
 
-    const messages = [];
-    const seenNodes = new Set();
-    const seenItemIndices = new Set();
+    const messagesMap = new Map();
 
     const strictSelectors = [
       '[data-testid="user-message"]',
@@ -209,11 +207,12 @@ export class ClaudeParser extends ChatParser {
 
     const fallbackSelectors = ['div.font-serif', 'div[class*="font-claude"]'].join(', ');
 
-    /** Converts mounted message and artifact candidates and adds unseen role/content pairs. */
+    /** Converts mounted candidates and refreshes previously collected entries. */
     const scan = async () => {
       const rawStrict = Array.from(document.querySelectorAll(strictSelectors));
       const strictCandidates = rawStrict.filter(
-        (el) => !rawStrict.some((other) => other !== el && other.contains(el)),
+        (el) => el.matches('.artifact-block-cell') ||
+          !rawStrict.some((other) => other !== el && other.contains(el)),
       );
 
       const rawFallback = Array.from(document.querySelectorAll(fallbackSelectors));
@@ -237,30 +236,27 @@ export class ClaudeParser extends ChatParser {
       const artifactMap = new Map();
       artifactElements.forEach((el, index) => artifactMap.set(el, index));
 
+      const itemCandidateCounts = new Map();
       for (const el of allElements) {
-        if (seenNodes.has(el)) continue;
-
-        const virtuosoItem = el.closest?.('[data-item-index], [data-index]');
-        const itemIdx = virtuosoItem?.getAttribute?.('data-item-index') || virtuosoItem?.getAttribute?.('data-index');
+        const role = el.matches('.artifact-block-cell') ? 'Claude Artifact'
+          : el.closest('[data-testid="user-message"]') ? 'User' : 'Claude';
+        const virtuosoItem = el.closest('[data-item-index], [data-index]');
+        const itemIdx = virtuosoItem?.getAttribute('data-item-index') ?? virtuosoItem?.getAttribute('data-index');
+        let key = el;
         if (itemIdx !== undefined && itemIdx !== null) {
-          const roleHint = el.matches?.('[data-testid="user-message"]') ? 'user' : 'bot';
-          const itemKey = `${itemIdx}:${roleHint}`;
-          if (seenItemIndices.has(itemKey)) continue;
-          seenItemIndices.add(itemKey);
+          const itemRole = `${itemIdx}:${role}`;
+          const ordinal = itemCandidateCounts.get(itemRole) || 0;
+          itemCandidateCounts.set(itemRole, ordinal + 1);
+          key = `${itemRole}:${ordinal}`;
         }
 
-        seenNodes.add(el);
-
-        let role = 'Unknown';
         let content = '';
 
-        if (el.matches('[data-testid="user-message"]') || el.closest('[data-testid="user-message"]')) {
-          role = 'User';
+        if (role === 'User') {
           const clone = el.cloneNode(true);
-          clone.querySelectorAll('button').forEach((btn) => btn.remove());
+          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
           content = convertToMarkdown(clone);
         } else if (el.matches('.artifact-block-cell')) {
-          role = 'Claude Artifact';
           const index = artifactMap.get(el);
           if (index !== undefined) {
             const info = await getArtifactInfo(index);
@@ -285,15 +281,14 @@ export class ClaudeParser extends ChatParser {
             }
           }
         } else {
-          role = 'Claude';
           const clone = el.cloneNode(true);
-          clone.querySelectorAll('button').forEach((btn) => btn.remove());
+          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
           content = convertToMarkdown(clone);
         }
 
         const trimmed = content?.trim();
         if (trimmed) {
-          messages.push({ role, content: trimmed });
+          messagesMap.set(key, { role, content: trimmed });
         }
       }
     };
@@ -346,7 +341,7 @@ export class ClaudeParser extends ChatParser {
 
     return {
       title,
-      messages,
+      messages: Array.from(messagesMap.values()),
       metadata: {
         Source: 'Claude',
         Date: new Date().toLocaleString(),
