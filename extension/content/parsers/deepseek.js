@@ -8,47 +8,133 @@ export class DeepSeekParser extends ChatParser {
 
   async parse() {
     const title = document.title || 'DeepSeek Chat';
-    const messages = [];
+    const messagesMap = new Map();
 
-    // Selectors from research
-    const userSelector = '.fbb737a4';
-    const assistantSelector = '.ds-markdown';
+    const scanMessages = () => {
+      // 1. Primary: .ds-message containers or virtual list items
+      const messageContainers = Array.from(
+        document.querySelectorAll(
+          '.ds-message, [class*="ds-message"], [data-virtual-list-item-key], .ds-message-row, .message-row',
+        ),
+      );
 
-    // We'll traverse the DOM to find these in order
-    // DeepSeek seems to put messages in a container.
-    // Let's try to get all candidate message elements in document order
-    const allElements = document.querySelectorAll(`${userSelector}, ${assistantSelector}`);
+      if (messageContainers.length > 0) {
+        messageContainers.forEach((container, idx) => {
+          const isAssistant = Boolean(
+            container.querySelector('.ds-markdown, [class*="ds-markdown"], [class*="assistant-message"]') ||
+            container.classList.contains('ds-assistant-message'),
+          );
 
-    allElements.forEach((el) => {
-      let role = 'Unknown';
-      if (el.matches(userSelector)) {
-        role = 'User';
-      } else if (el.matches(assistantSelector)) {
-        role = 'DeepSeek';
+          const role = isAssistant ? 'DeepSeek' : 'User';
+          let content = '';
+          let thinking = '';
+
+          if (isAssistant) {
+            const thoughtEl = container.querySelector('.ds-thought, [class*="thought"]');
+            if (thoughtEl) {
+              thinking = convertToMarkdown(thoughtEl).trim();
+            }
+
+            const mdEl =
+              container.querySelector(
+                '.ds-markdown, [class*="ds-markdown"], [class*="assistant-message-main-content"]',
+              ) || container;
+            const clone = mdEl.cloneNode(true);
+            if (thoughtEl) {
+              clone.querySelectorAll('.ds-thought, [class*="thought"]').forEach((el) => el.remove());
+            }
+            clone.querySelectorAll('button, svg, [class*="icon"], [class*="action"]').forEach((el) => el.remove());
+            content = convertToMarkdown(clone).trim();
+          } else {
+            const clone = container.cloneNode(true);
+            clone.querySelectorAll('button, svg, [class*="icon"], [class*="action"]').forEach((el) => el.remove());
+            content = convertToMarkdown(clone).trim();
+          }
+
+          if (content) {
+            const key = `${role}:${content.slice(0, 80)}`;
+            if (!messagesMap.has(key)) {
+              const vKey = container.getAttribute('data-virtual-list-item-key');
+              const sortIndex = vKey !== null && !isNaN(Number(vKey)) ? Number(vKey) : (messagesMap.size || idx);
+              messagesMap.set(key, { index: sortIndex, role, content, ...(thinking ? { thinking } : {}) });
+            }
+          }
+        });
       }
 
-      // Cleanup: remove copy buttons associated with code blocks if they capture text
-      // (Note: might need to be careful not to modify the actual DOM if possible,
-      // but for extraction textContent usually ignores hidden elements or we can clone)
+      // 2. Fallback to candidate selectors if no message containers found
+      if (messagesMap.size === 0) {
+        const userSelector = '.fbb737a4';
+        const assistantSelector = '.ds-markdown';
+        const allElements = Array.from(document.querySelectorAll(`${userSelector}, ${assistantSelector}`));
 
-      const text = convertToMarkdown(el);
-      if (text.trim()) {
-        messages.push({ role, content: text.trim() });
+        allElements.forEach((el, idx) => {
+          const role = el.matches(userSelector) ? 'User' : 'DeepSeek';
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button, svg').forEach((b) => b.remove());
+          const text = convertToMarkdown(clone).trim();
+          if (text) {
+            const key = `${role}:${text.slice(0, 80)}`;
+            if (!messagesMap.has(key)) {
+              messagesMap.set(key, { index: idx, role, content: text });
+            }
+          }
+        });
       }
-    });
+    };
 
-    // Fallback if the specific classes fail (e.g. class name rotation)
-    if (messages.length === 0) {
-      const messageRows = document.querySelectorAll('.ds-message-row, .message-row');
-      messageRows.forEach((row) => {
-        const isUser = row.classList.contains('ds-user-message');
-        const role = isUser ? 'User' : 'DeepSeek';
-        const text = convertToMarkdown(row);
-        if (text.trim()) {
-          messages.push({ role, content: text.trim() });
+    // Scan initial view
+    scanMessages();
+
+    // Step-scroll to handle virtualization
+    const scrollContainer =
+      document.querySelector('.ds-virtual-list') ||
+      document.querySelector('div[class*="virtual-list"]') ||
+      document.querySelector('main .overflow-y-auto') ||
+      document.querySelector('.overflow-y-auto') ||
+      document.querySelector('main') ||
+      document.scrollingElement;
+
+    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
+      const origTop = scrollContainer.scrollTop;
+      try {
+        scrollContainer.scrollTop = 0;
+        await new Promise((r) => setTimeout(r, 140));
+        scanMessages();
+
+        const step = Math.max(300, Math.floor(scrollContainer.clientHeight * 0.75));
+        let stalled = 0;
+        while (
+          scrollContainer.scrollTop < scrollContainer.scrollHeight - scrollContainer.clientHeight - 10 &&
+          stalled < 3
+        ) {
+          const before = scrollContainer.scrollTop;
+          scrollContainer.scrollTop = Math.min(scrollContainer.scrollTop + step, scrollContainer.scrollHeight);
+          await new Promise((r) => setTimeout(r, 120));
+          scanMessages();
+
+          if (scrollContainer.scrollTop === before) {
+            stalled++;
+          } else {
+            stalled = 0;
+          }
         }
-      });
+
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        await new Promise((r) => setTimeout(r, 120));
+        scanMessages();
+      } finally {
+        scrollContainer.scrollTop = origTop;
+      }
     }
+
+    const messages = Array.from(messagesMap.values())
+      .sort((a, b) => a.index - b.index)
+      .map(({ role, content, thinking }) => ({
+        role,
+        content,
+        ...(thinking ? { thinking } : {}),
+      }));
 
     return { title, messages };
   }
