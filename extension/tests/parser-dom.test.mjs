@@ -5,12 +5,24 @@ import { collectMountedTurnMessages } from '../content/parsers/chatgpt_scroll_co
 import { ClaudeParser } from '../content/parsers/claude.js';
 import { DeepSeekParser } from '../content/parsers/deepseek.js';
 
+/**
+ * Compares test values by their JSON serialization, including array and object key order.
+ * @param {*} actual - Observed value.
+ * @param {*} expected - Expected value.
+ * @returns {void}
+ * @throws {Error} When the serialized values differ.
+ */
 function equal(actual, expected) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`Expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`);
   }
 }
 
+/**
+ * Runs parser regressions in a browser document using synthetic messages and artifact responses.
+ * Restores replaced browser globals and removes fixtures after the test cases finish.
+ * @returns {Promise<Array<{name: string, status: string, error?: string}>>} Per-case pass or failure results.
+ */
 export async function runParserDOMTests() {
   const results = [];
   const fixture = document.createElement('div');

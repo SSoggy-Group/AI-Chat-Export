@@ -67,6 +67,13 @@ export class ChatGPTParser extends ChatParser {
       .trim();
   }
 
+  /**
+   * Identifies a message by message ID, turn ID, or virtual-item position, then node identity.
+   * @param {Element} container - Message container or standalone role element.
+   * @param {Element|null} roleElement - Element carrying the message author role, if present.
+   * @param {string} role - Exported author role used to distinguish messages within a turn or item.
+   * @returns {string|Element} Deduplication key; node identity is used when no stable ID exists.
+   */
   getMessageKey(container, roleElement, role) {
     const idElement =
       roleElement?.closest?.('[data-message-id]') || container.querySelector?.('[data-message-id]');
@@ -174,6 +181,12 @@ export class ChatGPTParser extends ChatParser {
     return convertToMarkdown(contentElement);
   }
 
+  /**
+   * Converts message content to Markdown, removes interface controls, and appends attachments and images.
+   * @param {Element} container - Mounted message container or standalone role element.
+   * @returns {{role: string, content: string, key: string|Element}|null} Message with its deduplication key,
+   *   or null when no content elements or exportable content are found.
+   */
   extractMessage(container) {
     const roleElements = this.getRoleElements(container);
     const roleElement = roleElements[0] || this.getRoleElement(container);
