@@ -6,10 +6,16 @@ export class DeepSeekParser extends ChatParser {
     return url.includes('chat.deepseek.com');
   }
 
+  /**
+   * Collects messages and optional assistant thoughts across virtualized scroll steps.
+   * Restores the original scroll position and orders messages by virtual-list or fallback index.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string, thinking?: string}>}>}
+   */
   async parse() {
     const title = document.title || 'DeepSeek Chat';
     const messagesMap = new Map();
 
+    /** Adds unseen mounted messages, using legacy selectors when no message containers exist. */
     const scanMessages = () => {
       // 1. Primary: .ds-message containers or virtual list items
       const messageContainers = Array.from(

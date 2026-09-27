@@ -3,6 +3,13 @@ import { convertToMarkdown } from '../utils/html-to-markdown.js';
 
 const CLAUDE_API_URL = 'https://claude.ai/api/organizations';
 
+/**
+ * Formats extracted attachment text and file names as Markdown without reading blob contents.
+ * @param {Object} [options={}] - Attachment data from a user message.
+ * @param {Array<{file_type?: string, file_name?: string, extracted_content?: string}>} [options.attachments] - Extracted attachments.
+ * @param {Array<{file_name?: string}>} [options.files] - Files represented by name only.
+ * @returns {string} Combined attachment and file descriptions.
+ */
 function processAttachments({ attachments, files } = {}) {
   const safeAttachments = Array.isArray(attachments) ? attachments : [];
   const safeFiles = Array.isArray(files) ? files : [];
@@ -23,6 +30,11 @@ function processAttachments({ attachments, files } = {}) {
   );
 }
 
+/**
+ * Converts a Claude content block into text, including artifact and REPL tool inputs.
+ * @param {{type: string, text?: string, name?: string, input?: Object}} item - API content block.
+ * @returns {string} Markdown content, or an empty string for unsupported tool uses.
+ */
 function processContentItem(item) {
   switch (item.type) {
     case 'text':
@@ -44,6 +56,11 @@ function processContentItem(item) {
   }
 }
 
+/**
+ * Normalizes an API message, separating thinking and appending user attachments.
+ * @param {{sender: string, content: string|Object[], attachments?: Object[], files_v2?: Object[]}} msg - Claude API message.
+ * @returns {{role: string, content: string, thinking?: string}} Exportable message.
+ */
 function processApiMessage(msg) {
   const { sender, content, attachments, files_v2 } = msg;
   let message = '';
@@ -81,6 +98,12 @@ export class ClaudeParser extends ChatParser {
     return url.includes('claude.ai');
   }
 
+  /**
+   * Fetches the current conversation using the signed-in user's organization and session.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string, thinking?: string}>, metadata: Record<string, string>}|null>}
+   *   Conversation data, or null for missing identifiers, unsuccessful responses, or missing messages.
+   * @throws {Error} Propagates network and JSON parsing failures for the caller to handle.
+   */
   async parseFromAPI() {
     const convMatch = window.location.href.match(/\/chat\/([a-zA-Z0-9_-]+)/);
     const convId = convMatch ? convMatch[1] : null;
@@ -130,6 +153,11 @@ export class ClaudeParser extends ChatParser {
     };
   }
 
+  /**
+   * Collects mounted messages and artifacts while scrolling, then restores the scroll position.
+   * Deduplicates repeated scans by role and content and retains first-seen order.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string}>, metadata: Record<string, string>}>}
+   */
   async parseFromDOM() {
     const title = document.title || 'Claude Chat';
 
@@ -177,6 +205,7 @@ export class ClaudeParser extends ChatParser {
 
     const fallbackSelectors = ['div.font-serif', 'div[class*="font-claude"]'].join(', ');
 
+    /** Converts mounted message and artifact candidates and adds unseen role/content pairs. */
     const scan = async () => {
       const strictCandidates = Array.from(document.querySelectorAll(strictSelectors));
       const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
@@ -304,6 +333,10 @@ export class ClaudeParser extends ChatParser {
     };
   }
 
+  /**
+   * Uses API messages when available, falling back to DOM extraction on empty results or errors.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string, thinking?: string}>, metadata: Record<string, string>}>}
+   */
   async parse() {
     try {
       const apiResult = await this.parseFromAPI();

@@ -5,6 +5,11 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Checks whether an element's content exceeds its viewport height by more than 40 pixels.
+ * @param {Element|null|undefined} element - Candidate scroll container.
+ * @returns {boolean}
+ */
 function isScrollable(element) {
   if (!element) return false;
   return element.scrollHeight > element.clientHeight + 40;
@@ -22,6 +27,11 @@ function publicMessage(message) {
   };
 }
 
+/**
+ * Reads the numeric index from a conversation turn's data-testid attribute.
+ * @param {Element|null|undefined} turn - Mounted conversation turn.
+ * @returns {number} Turn index, or Infinity when the attribute is missing or invalid.
+ */
 export function getConversationTurnIndex(turn) {
   if (!turn) return Number.POSITIVE_INFINITY;
   const testId = turn.getAttribute?.('data-testid') || '';
@@ -29,6 +39,11 @@ export function getConversationTurnIndex(turn) {
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }
 
+/**
+ * Finds currently mounted conversation turns and sorts them by their numeric indices.
+ * @param {Document|null} [doc=document] - Document to query.
+ * @returns {Element[]} Sorted turns, or an empty array if querying is unavailable.
+ */
 export function getConversationTurns(doc = document) {
   if (!doc || !doc.querySelectorAll) return [];
   return Array.from(doc.querySelectorAll(TURN_SELECTOR)).sort((a, b) => {
@@ -36,6 +51,12 @@ export function getConversationTurns(doc = document) {
   });
 }
 
+/**
+ * Finds a scroll root using explicit markers, turn ancestors, then document fallbacks.
+ * @param {Element[]} [turns=[]] - Mounted turns; an empty array triggers a document query.
+ * @param {Document|null} [doc=document] - Document containing the conversation.
+ * @returns {Element|null} Scroll container, or null when no document is supplied.
+ */
 export function findChatGPTScrollRoot(turns = [], doc = document) {
   if (!doc) return null;
 
@@ -63,6 +84,17 @@ export function findChatGPTScrollRoot(turns = [], doc = document) {
   return doc.scrollingElement || doc.documentElement || doc.body;
 }
 
+/**
+ * Scans live messages while scrolling, deduplicates them, and restores the original scroll position.
+ * @param {Object} options - Collection dependencies and render timing.
+ * @param {Element[]} [options.turns=[]] - Legacy turn list; scanning requires a queryable document.
+ * @param {Element|null} options.scrollRoot - Container to scroll when its content overflows.
+ * @param {function(Element): ({role: string, content: string, key?: string}|null)} options.extractMessage - Reads a turn or role element.
+ * @param {function(number): Promise<void>} [options.waitForRender] - Waits after scrolling; defaults to a timer.
+ * @param {number} [options.renderWaitMs=140] - Delay in milliseconds between scrolling and scanning.
+ * @param {Document|null} [options.doc] - Document to scan; defaults to the global document when available.
+ * @returns {Promise<Array<{role: string, content: string}>>} Messages ordered by turn or fallback index.
+ */
 export async function collectMountedTurnMessages({
   turns = [],
   scrollRoot,
@@ -74,6 +106,7 @@ export async function collectMountedTurnMessages({
   const originalTop = scrollRoot?.scrollTop;
   const messagesMap = new Map();
 
+  /** Adds newly observed turn and role-element messages to the collection. */
   const scan = () => {
     if (!doc || !doc.querySelectorAll) return;
 

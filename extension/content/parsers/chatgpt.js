@@ -210,6 +210,10 @@ export class ChatGPTParser extends ChatParser {
       .map(({ role, content }) => ({ role, content }));
   }
 
+  /**
+   * Collects messages while scrolling through mounted turns, then restores the scroll position.
+   * @returns {Promise<Array<{role: string, content: string}>>} Messages ordered by turn index.
+   */
   async extractAllConversationTurns() {
     return collectMountedTurnMessages({
       scrollRoot: findChatGPTScrollRoot([], document),
@@ -218,6 +222,11 @@ export class ChatGPTParser extends ChatParser {
     });
   }
 
+  /**
+   * Extracts the conversation, using iframe heuristics only when standard extraction is empty.
+   * @param {{full?: boolean}} [options={}] Set full to false to read only mounted messages.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string}>, metadata?: Record<string, string>}>}
+   */
   async parse(options = {}) {
     const title = document.title || 'ChatGPT Session';
     const messages = [];
