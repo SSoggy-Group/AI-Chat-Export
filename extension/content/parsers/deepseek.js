@@ -52,18 +52,16 @@ export class DeepSeekParser extends ChatParser {
           }
 
           if (content) {
-            const key = `${role}:${content.slice(0, 80)}`;
+            const vKey = container.getAttribute('data-virtual-list-item-key');
+            const key = vKey ? `vkey-${vKey}` : `${role}:${content}`;
             if (!messagesMap.has(key)) {
-              const vKey = container.getAttribute('data-virtual-list-item-key');
               const sortIndex = vKey !== null && !isNaN(Number(vKey)) ? Number(vKey) : (messagesMap.size || idx);
               messagesMap.set(key, { index: sortIndex, role, content, ...(thinking ? { thinking } : {}) });
             }
           }
         });
-      }
-
-      // 2. Fallback to candidate selectors if no message containers found
-      if (messagesMap.size === 0) {
+      } else {
+        // 2. Fallback to candidate selectors if no message containers found
         const userSelector = '.fbb737a4';
         const assistantSelector = '.ds-markdown';
         const allElements = Array.from(document.querySelectorAll(`${userSelector}, ${assistantSelector}`));
@@ -74,7 +72,7 @@ export class DeepSeekParser extends ChatParser {
           clone.querySelectorAll('button, svg').forEach((b) => b.remove());
           const text = convertToMarkdown(clone).trim();
           if (text) {
-            const key = `${role}:${text.slice(0, 80)}`;
+            const key = `${role}:${text}`;
             if (!messagesMap.has(key)) {
               messagesMap.set(key, { index: idx, role, content: text });
             }
@@ -82,9 +80,6 @@ export class DeepSeekParser extends ChatParser {
         });
       }
     };
-
-    // Scan initial view
-    scanMessages();
 
     // Step-scroll to handle virtualization
     const scrollContainer =
@@ -126,6 +121,8 @@ export class DeepSeekParser extends ChatParser {
       } finally {
         scrollContainer.scrollTop = origTop;
       }
+    } else {
+      scanMessages();
     }
 
     const messages = Array.from(messagesMap.values())

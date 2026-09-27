@@ -211,10 +211,8 @@ export class ChatGPTParser extends ChatParser {
   }
 
   async extractAllConversationTurns() {
-    const turns = getConversationTurns(document);
     return collectMountedTurnMessages({
-      turns,
-      scrollRoot: findChatGPTScrollRoot(turns, document),
+      scrollRoot: findChatGPTScrollRoot([], document),
       extractMessage: (turn) => this.extractMessage(turn),
       doc: document,
     });
@@ -353,14 +351,6 @@ export class ChatGPTParser extends ChatParser {
         return { title, messages };
       }
     }
-
-    const fullExport = options.full !== false;
-    const extractedMessages = fullExport
-      ? await this.extractAllConversationTurns()
-      : this.extractMountedMessages();
-    messages.push(
-      ...(extractedMessages.length > 0 ? extractedMessages : this.extractMountedMessages()),
-    );
 
     const metadata = {
       Source: 'ChatGPT',

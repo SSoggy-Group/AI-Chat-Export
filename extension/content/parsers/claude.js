@@ -3,7 +3,10 @@ import { convertToMarkdown } from '../utils/html-to-markdown.js';
 
 const CLAUDE_API_URL = 'https://claude.ai/api/organizations';
 
-function processAttachments({ attachments = [], files = [] }) {
+function processAttachments({ attachments, files } = {}) {
+  const safeAttachments = Array.isArray(attachments) ? attachments : [];
+  const safeFiles = Array.isArray(files) ? files : [];
+
   const formatAttachment = ({ file_type, file_name, extracted_content }) => {
     const fileType = file_type?.split('/')[1] || file_type;
     const content = fileType
@@ -16,7 +19,7 @@ function processAttachments({ attachments = [], files = [] }) {
     file_name ? `\n\n${file_name} (can't show blob content)\n\n` : '';
 
   return (
-    attachments.map(formatAttachment).join('') + files.map(formatFile).join('')
+    safeAttachments.map(formatAttachment).join('') + safeFiles.map(formatFile).join('')
   );
 }
 
@@ -129,7 +132,6 @@ export class ClaudeParser extends ChatParser {
 
   async parseFromDOM() {
     const title = document.title || 'Claude Chat';
-    const messages = [];
 
     // Inject the React reader script if not already injected
     if (!document.getElementById('ai-export-claude-reader')) {
@@ -162,27 +164,7 @@ export class ClaudeParser extends ChatParser {
       });
     };
 
-    // Step-scroll to ensure virtualized messages are mounted
-    const scrollContainer =
-      document.querySelector('main .overflow-y-auto') ||
-      document.querySelector('.overflow-y-auto') ||
-      document.querySelector('main') ||
-      document.scrollingElement;
-
-    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
-      const origTop = scrollContainer.scrollTop;
-      try {
-        scrollContainer.scrollTop = 0;
-        await new Promise((r) => setTimeout(r, 150));
-        const step = Math.max(300, Math.floor(scrollContainer.clientHeight * 0.75));
-        while (scrollContainer.scrollTop < scrollContainer.scrollHeight - scrollContainer.clientHeight - 10) {
-          scrollContainer.scrollTop += step;
-          await new Promise((r) => setTimeout(r, 120));
-        }
-      } finally {
-        scrollContainer.scrollTop = origTop;
-      }
-    }
+    const messagesMap = new Map();
 
     const strictSelectors = [
       '[data-testid="user-message"]',
@@ -195,70 +177,120 @@ export class ClaudeParser extends ChatParser {
 
     const fallbackSelectors = ['div.font-serif', 'div[class*="font-claude"]'].join(', ');
 
-    const strictCandidates = Array.from(document.querySelectorAll(strictSelectors));
-    const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
+    const scan = async () => {
+      const strictCandidates = Array.from(document.querySelectorAll(strictSelectors));
+      const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
 
-    const validFallbacks = fallbackCandidates.filter((fallback) => {
-      const overlaps = strictCandidates.some(
-        (strict) => strict.contains(fallback) || fallback.contains(strict),
-      );
-      return !overlaps;
-    });
+      const validFallbacks = fallbackCandidates.filter((fallback) => {
+        const overlaps = strictCandidates.some(
+          (strict) => strict.contains(fallback) || fallback.contains(strict),
+        );
+        return !overlaps;
+      });
 
-    const combined = [...new Set([...strictCandidates, ...validFallbacks])];
-    const allElements = combined.sort((a, b) => {
-      return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
+      const combined = [...new Set([...strictCandidates, ...validFallbacks])];
+      const allElements = combined.sort((a, b) => {
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
 
-    const artifactElements = document.querySelectorAll('.artifact-block-cell');
-    const artifactMap = new Map();
-    artifactElements.forEach((el, index) => artifactMap.set(el, index));
+      const artifactElements = document.querySelectorAll('.artifact-block-cell');
+      const artifactMap = new Map();
+      artifactElements.forEach((el, index) => artifactMap.set(el, index));
 
-    for (const el of allElements) {
-      let role = 'Unknown';
-      let content = '';
+      for (const el of allElements) {
+        let role = 'Unknown';
+        let content = '';
 
-      if (el.matches('[data-testid="user-message"]') || el.closest('[data-testid="user-message"]')) {
-        role = 'User';
-        const clone = el.cloneNode(true);
-        clone.querySelectorAll('button').forEach((btn) => btn.remove());
-        content = convertToMarkdown(clone);
-      } else if (el.matches('.artifact-block-cell')) {
-        role = 'Claude Artifact';
-        const index = artifactMap.get(el);
-        if (index !== undefined) {
-          const info = await getArtifactInfo(index);
-          if (info) {
-            const artTitle = info.title || 'Artifact';
-            const artContent = info.content || '';
-            const artLang = info.language || 'text';
-            if (artLang === 'markdown' || artLang === 'text') {
-              const quotedContent = artContent
-                .split('\n')
-                .map((line) => `> ${line}`)
-                .join('\n');
-              content = `\n\n> **Artifact: ${artTitle}**\n\n${quotedContent}\n\n`;
+        if (el.matches('[data-testid="user-message"]') || el.closest('[data-testid="user-message"]')) {
+          role = 'User';
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button').forEach((btn) => btn.remove());
+          content = convertToMarkdown(clone);
+        } else if (el.matches('.artifact-block-cell')) {
+          role = 'Claude Artifact';
+          const index = artifactMap.get(el);
+          if (index !== undefined) {
+            const info = await getArtifactInfo(index);
+            if (info) {
+              const artTitle = info.title || 'Artifact';
+              const artContent = info.content || '';
+              const artLang = info.language || 'text';
+              if (artLang === 'markdown' || artLang === 'text') {
+                const quotedContent = artContent
+                  .split('\n')
+                  .map((line) => `> ${line}`)
+                  .join('\n');
+                content = `\n\n> **Artifact: ${artTitle}**\n\n${quotedContent}\n\n`;
+              } else {
+                content = `\n\n> **Artifact: ${artTitle}**\n\`\`\`${artLang}\n${artContent}\n\`\`\`\n\n`;
+              }
             } else {
-              content = `\n\n> **Artifact: ${artTitle}**\n\`\`\`${artLang}\n${artContent}\n\`\`\`\n\n`;
+              const header =
+                el.querySelector('.flex.items-center.gap-2') || el.querySelector('.font-bold');
+              const fallbackTitle = header ? header.innerText.split('\n')[0] : 'Unknown Artifact';
+              content = `\n> [Artifact: ${fallbackTitle} - content extraction failed]\n`;
             }
-          } else {
-            const header =
-              el.querySelector('.flex.items-center.gap-2') || el.querySelector('.font-bold');
-            const fallbackTitle = header ? header.innerText.split('\n')[0] : 'Unknown Artifact';
-            content = `\n> [Artifact: ${fallbackTitle} - content extraction failed]\n`;
+          }
+        } else {
+          role = 'Claude';
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button').forEach((btn) => btn.remove());
+          content = convertToMarkdown(clone);
+        }
+
+        const trimmed = content?.trim();
+        if (trimmed) {
+          const key = `${role}:${trimmed}`;
+          if (!messagesMap.has(key)) {
+            messagesMap.set(key, { role, content: trimmed });
           }
         }
-      } else {
-        role = 'Claude';
-        const clone = el.cloneNode(true);
-        clone.querySelectorAll('button').forEach((btn) => btn.remove());
-        content = convertToMarkdown(clone);
       }
+    };
 
-      if (content && content.trim()) {
-        messages.push({ role, content: content.trim() });
+    // Step-scroll to ensure virtualized messages are mounted
+    const scrollContainer =
+      document.querySelector('main .overflow-y-auto') ||
+      document.querySelector('.overflow-y-auto') ||
+      document.querySelector('main') ||
+      document.scrollingElement;
+
+    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
+      const origTop = scrollContainer.scrollTop;
+      try {
+        scrollContainer.scrollTop = 0;
+        await new Promise((r) => setTimeout(r, 140));
+        await scan();
+
+        const step = Math.max(300, Math.floor(scrollContainer.clientHeight * 0.75));
+        let stalled = 0;
+        while (
+          scrollContainer.scrollTop < scrollContainer.scrollHeight - scrollContainer.clientHeight - 10 &&
+          stalled < 3
+        ) {
+          const prevTop = scrollContainer.scrollTop;
+          scrollContainer.scrollTop = Math.min(scrollContainer.scrollTop + step, scrollContainer.scrollHeight);
+          await new Promise((r) => setTimeout(r, 120));
+          await scan();
+
+          if (scrollContainer.scrollTop === prevTop) {
+            stalled++;
+          } else {
+            stalled = 0;
+          }
+        }
+
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        await new Promise((r) => setTimeout(r, 120));
+        await scan();
+      } finally {
+        scrollContainer.scrollTop = origTop;
       }
+    } else {
+      await scan();
     }
+
+    const messages = Array.from(messagesMap.values());
 
     return {
       title,

@@ -78,7 +78,8 @@ export async function collectMountedTurnMessages({
     if (!doc || !doc.querySelectorAll) return;
 
     // Scan turn containers
-    const currentTurns = getConversationTurns(doc);
+    const currentTurns =
+      doc && doc.querySelectorAll ? getConversationTurns(doc) : (Array.isArray(turns) ? turns : []);
     currentTurns.forEach((turn) => {
       const idx = getConversationTurnIndex(turn);
       const msg = extractMessage(turn);
