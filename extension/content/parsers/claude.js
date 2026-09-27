@@ -109,10 +109,11 @@ export class ClaudeParser extends ChatParser {
     const convId = convMatch ? convMatch[1] : null;
     if (!convId) return null;
 
-    // Get Organization ID
+    // Get Organization ID with timeout
     const orgRes = await fetch(CLAUDE_API_URL, {
       credentials: 'include',
       headers: { accept: 'application/json', 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
     });
     if (!orgRes.ok) return null;
 
@@ -123,12 +124,13 @@ export class ClaudeParser extends ChatParser {
     const orgId = chatOrg?.uuid;
     if (!orgId) return null;
 
-    // Fetch conversation details
+    // Fetch conversation details with timeout
     const convRes = await fetch(
       `${CLAUDE_API_URL}/${orgId}/chat_conversations/${convId}?tree=True&rendering_mode=messages&render_all_tools=true`,
       {
         credentials: 'include',
         headers: { accept: '*/*', 'content-type': 'application/json' },
+        signal: AbortSignal.timeout(5000),
       },
     );
     if (!convRes.ok) return null;
@@ -192,7 +194,9 @@ export class ClaudeParser extends ChatParser {
       });
     };
 
-    const messagesMap = new Map();
+    const messages = [];
+    const seenNodes = new Set();
+    const seenItemIndices = new Set();
 
     const strictSelectors = [
       '[data-testid="user-message"]',
@@ -207,13 +211,15 @@ export class ClaudeParser extends ChatParser {
 
     /** Converts mounted message and artifact candidates and adds unseen role/content pairs. */
     const scan = async () => {
-      const strictMatches = Array.from(document.querySelectorAll(strictSelectors));
-      const strictCandidates = strictMatches.filter(
-        (candidate) => !strictMatches.some(
-          (other) => other !== candidate && other.contains(candidate),
-        ),
+      const rawStrict = Array.from(document.querySelectorAll(strictSelectors));
+      const strictCandidates = rawStrict.filter(
+        (el) => !rawStrict.some((other) => other !== el && other.contains(el)),
       );
-      const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
+
+      const rawFallback = Array.from(document.querySelectorAll(fallbackSelectors));
+      const fallbackCandidates = rawFallback.filter(
+        (el) => !rawFallback.some((other) => other !== el && other.contains(el)),
+      );
 
       const validFallbacks = fallbackCandidates.filter((fallback) => {
         const overlaps = strictCandidates.some(
@@ -227,11 +233,24 @@ export class ClaudeParser extends ChatParser {
         return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
       });
 
-      const artifactElements = document.querySelectorAll('.artifact-block-cell');
+      const artifactElements = Array.from(document.querySelectorAll('.artifact-block-cell'));
       const artifactMap = new Map();
       artifactElements.forEach((el, index) => artifactMap.set(el, index));
 
       for (const el of allElements) {
+        if (seenNodes.has(el)) continue;
+
+        const virtuosoItem = el.closest?.('[data-item-index], [data-index]');
+        const itemIdx = virtuosoItem?.getAttribute?.('data-item-index') || virtuosoItem?.getAttribute?.('data-index');
+        if (itemIdx !== undefined && itemIdx !== null) {
+          const roleHint = el.matches?.('[data-testid="user-message"]') ? 'user' : 'bot';
+          const itemKey = `${itemIdx}:${roleHint}`;
+          if (seenItemIndices.has(itemKey)) continue;
+          seenItemIndices.add(itemKey);
+        }
+
+        seenNodes.add(el);
+
         let role = 'Unknown';
         let content = '';
 
@@ -274,22 +293,23 @@ export class ClaudeParser extends ChatParser {
 
         const trimmed = content?.trim();
         if (trimmed) {
-          const key = `${role}:${trimmed}`;
-          if (!messagesMap.has(key)) {
-            messagesMap.set(key, { role, content: trimmed });
-          }
+          messages.push({ role, content: trimmed });
         }
       }
     };
 
-    // Step-scroll to ensure virtualized messages are mounted
-    const scrollContainer =
-      document.querySelector('main .overflow-y-auto') ||
-      document.querySelector('.overflow-y-auto') ||
-      document.querySelector('main') ||
-      document.scrollingElement;
+    // Find actual scrollable container
+    const scrollCandidates = [
+      document.querySelector('main .overflow-y-auto'),
+      document.querySelector('.overflow-y-auto'),
+      document.querySelector('main'),
+      document.scrollingElement || document.documentElement,
+    ];
+    const scrollContainer = scrollCandidates.find(
+      (el) => el && el.scrollHeight > el.clientHeight + 40,
+    );
 
-    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
+    if (scrollContainer) {
       const origTop = scrollContainer.scrollTop;
       try {
         scrollContainer.scrollTop = 0;
@@ -323,8 +343,6 @@ export class ClaudeParser extends ChatParser {
     } else {
       await scan();
     }
-
-    const messages = Array.from(messagesMap.values());
 
     return {
       title,

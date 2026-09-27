@@ -14,18 +14,23 @@ export class DeepSeekParser extends ChatParser {
   async parse() {
     const title = document.title || 'DeepSeek Chat';
     const messagesMap = new Map();
+    let fallbackCounter = 0;
 
     /** Adds unseen mounted messages, using legacy selectors when no message containers exist. */
     const scanMessages = () => {
       // 1. Primary: .ds-message containers or virtual list items
-      const messageContainers = Array.from(
+      const rawContainers = Array.from(
         document.querySelectorAll(
           '.ds-message, [class*="ds-message"], [data-virtual-list-item-key], .ds-message-row, .message-row',
         ),
       );
+      // Keep only leaf containers so outer wrappers and inner elements aren't both processed
+      const messageContainers = rawContainers.filter(
+        (el) => !rawContainers.some((other) => other !== el && el.contains(other)),
+      );
 
       if (messageContainers.length > 0) {
-        messageContainers.forEach((container, idx) => {
+        messageContainers.forEach((container) => {
           const isAssistant = Boolean(
             container.querySelector('.ds-markdown, [class*="ds-markdown"], [class*="assistant-message"]') ||
             container.classList.contains('ds-assistant-message'),
@@ -58,10 +63,13 @@ export class DeepSeekParser extends ChatParser {
           }
 
           if (content) {
-            const vKey = container.getAttribute('data-virtual-list-item-key');
+            const vKey =
+              container.getAttribute('data-virtual-list-item-key') ||
+              container.closest('[data-virtual-list-item-key]')?.getAttribute('data-virtual-list-item-key');
             const key = vKey ? `vkey-${vKey}` : `${role}:${content}`;
             if (!messagesMap.has(key)) {
-              const sortIndex = vKey !== null && !isNaN(Number(vKey)) ? Number(vKey) : (messagesMap.size || idx);
+              const sortIndex =
+                vKey !== null && vKey !== undefined && !isNaN(Number(vKey)) ? Number(vKey) : messagesMap.size;
               messagesMap.set(key, { index: sortIndex, role, content, ...(thinking ? { thinking } : {}) });
             }
           }
@@ -72,7 +80,7 @@ export class DeepSeekParser extends ChatParser {
         const assistantSelector = '.ds-markdown';
         const allElements = Array.from(document.querySelectorAll(`${userSelector}, ${assistantSelector}`));
 
-        allElements.forEach((el, idx) => {
+        allElements.forEach((el) => {
           const role = el.matches(userSelector) ? 'User' : 'DeepSeek';
           const clone = el.cloneNode(true);
           clone.querySelectorAll('button, svg').forEach((b) => b.remove());
@@ -80,7 +88,7 @@ export class DeepSeekParser extends ChatParser {
           if (text) {
             const key = `${role}:${text}`;
             if (!messagesMap.has(key)) {
-              messagesMap.set(key, { index: idx, role, content: text });
+              messagesMap.set(key, { index: fallbackCounter++, role, content: text });
             }
           }
         });
@@ -94,13 +102,13 @@ export class DeepSeekParser extends ChatParser {
       document.querySelector('main .overflow-y-auto'),
       document.querySelector('.overflow-y-auto'),
       document.querySelector('main'),
-      document.scrollingElement,
+      document.scrollingElement || document.documentElement,
     ];
-    const scrollContainer =
-      scrollCandidates.find((candidate) => candidate && candidate.scrollHeight > candidate.clientHeight + 60) ||
-      scrollCandidates.find(Boolean);
+    const scrollContainer = scrollCandidates.find(
+      (el) => el && el.scrollHeight > el.clientHeight + 40,
+    );
 
-    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
+    if (scrollContainer) {
       const origTop = scrollContainer.scrollTop;
       try {
         scrollContainer.scrollTop = 0;

@@ -1,4 +1,4 @@
-const TURN_SELECTOR = 'section[data-testid^="conversation-turn-"]';
+export const TURN_SELECTOR = 'section[data-testid^="conversation-turn-"]';
 const DEFAULT_RENDER_WAIT_MS = 140;
 
 function delay(ms) {
@@ -124,16 +124,17 @@ export async function collectMountedTurnMessages({
       }
     });
 
-    // Also scan any [data-message-author-role] elements directly
-    const roleEls = Array.from(doc.querySelectorAll('[data-message-author-role]') || []);
-    roleEls.forEach((el, fallbackIdx) => {
+    // Also scan standalone role elements not inside a turn container
+    const standaloneRoleEls = Array.from(
+      doc.querySelectorAll('[data-message-author-role]') || []
+    ).filter((el) => !el.closest?.(TURN_SELECTOR));
+
+    standaloneRoleEls.forEach((el, fallbackIdx) => {
       const msg = extractMessage(el);
       if (msg && msg.content) {
         const key = messageKey(msg);
         if (!messagesMap.has(key)) {
-          const parentTurn = el.closest?.(TURN_SELECTOR);
-          const idx = parentTurn ? getConversationTurnIndex(parentTurn) : (messagesMap.size || fallbackIdx);
-          messagesMap.set(key, { index: idx, message: publicMessage(msg) });
+          messagesMap.set(key, { index: messagesMap.size || fallbackIdx, message: publicMessage(msg) });
         }
       }
     });

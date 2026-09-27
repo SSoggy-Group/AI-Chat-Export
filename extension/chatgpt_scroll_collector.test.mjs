@@ -107,3 +107,51 @@ test('collectMountedTurnMessages collects across virtualized scroll steps', asyn
   assert.strictEqual(results[3].content, 'Response 2');
   assert.strictEqual(scrollRoot.scrollTop, 0, 'Original scroll position should be restored');
 });
+
+test('collectMountedTurnMessages ignores role elements inside turns to avoid duplicates', async () => {
+  const turnElement = {
+    getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-1' : null),
+    id: 'turn-1',
+  };
+
+  const innerRoleElement = {
+    closest: (sel) => (sel.includes('conversation-turn') ? turnElement : null),
+    getAttribute: () => null,
+    id: 'inner-role-1',
+  };
+
+  const standaloneRoleElement = {
+    closest: () => null,
+    getAttribute: () => null,
+    id: 'standalone-role-2',
+  };
+
+  const doc = {
+    querySelectorAll: (selector) => {
+      if (selector.startsWith('section[data-testid^="conversation-turn-"]')) {
+        return [turnElement];
+      }
+      if (selector === '[data-message-author-role]') {
+        return [innerRoleElement, standaloneRoleElement];
+      }
+      return [];
+    },
+  };
+
+  const extractMessage = (el) => {
+    if (el.id === 'turn-1') return { role: 'User', content: 'Turn Prompt', key: 'turn-1' };
+    if (el.id === 'inner-role-1') return { role: 'User', content: 'Turn Prompt', key: 'diff-key' };
+    if (el.id === 'standalone-role-2') return { role: 'ChatGPT', content: 'Standalone Response', key: 'standalone-2' };
+    return null;
+  };
+
+  const results = await collectMountedTurnMessages({
+    extractMessage,
+    waitForRender: async () => {},
+    doc,
+  });
+
+  assert.strictEqual(results.length, 2, 'Should only contain the turn and the standalone element, no duplicate');
+  assert.strictEqual(results[0].content, 'Turn Prompt');
+  assert.strictEqual(results[1].content, 'Standalone Response');
+});

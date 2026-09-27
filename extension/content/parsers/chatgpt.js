@@ -4,6 +4,7 @@ import {
   collectMountedTurnMessages,
   findChatGPTScrollRoot,
   getConversationTurns,
+  TURN_SELECTOR,
 } from './chatgpt_scroll_collector.js';
 
 export class ChatGPTParser extends ChatParser {
@@ -72,7 +73,8 @@ export class ChatGPTParser extends ChatParser {
     const messageId = idElement?.getAttribute('data-message-id');
     if (messageId) return messageId;
 
-    const turnId = container.getAttribute?.('data-testid');
+    const turnEl = container.closest?.(TURN_SELECTOR) || roleElement?.closest?.(TURN_SELECTOR);
+    const turnId = container.getAttribute?.('data-testid') || turnEl?.getAttribute?.('data-testid');
     if (turnId) return `${turnId}:${role}`;
 
     return `${role}:${content.replace(/\s+/g, ' ').trim()}`;
