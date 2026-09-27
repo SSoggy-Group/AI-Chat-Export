@@ -12,6 +12,7 @@ rm -f "$OUTPUT"
 # Create ZIP excluding test files, git, or os files
 zip -r "$OUTPUT" . \
   -x "*.test.js" \
+  -x "*.test.mjs" \
   -x ".DS_Store" \
   -x "Thumbs.db"
 

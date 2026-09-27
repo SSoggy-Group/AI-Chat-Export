@@ -4,6 +4,7 @@ import {
   collectMountedTurnMessages,
   findChatGPTScrollRoot,
   getConversationTurns,
+  TURN_SELECTOR,
 } from './chatgpt_scroll_collector.js';
 
 export class ChatGPTParser extends ChatParser {
@@ -66,16 +67,33 @@ export class ChatGPTParser extends ChatParser {
       .trim();
   }
 
-  getMessageKey(container, roleElement, role, content) {
+  /**
+   * Identifies a message by message ID, turn ID, or virtual-item position, then node identity.
+   * @param {Element} container - Message container or standalone role element.
+   * @param {Element|null} roleElement - Element carrying the message author role, if present.
+   * @param {string} role - Exported author role used to distinguish messages within a turn or item.
+   * @returns {string|Element} Deduplication key; node identity is used when no stable ID exists.
+   */
+  getMessageKey(container, roleElement, role) {
     const idElement =
       roleElement?.closest?.('[data-message-id]') || container.querySelector?.('[data-message-id]');
     const messageId = idElement?.getAttribute('data-message-id');
     if (messageId) return messageId;
 
-    const turnId = container.getAttribute?.('data-testid');
+    const turnEl = container.closest?.(TURN_SELECTOR) || roleElement?.closest?.(TURN_SELECTOR);
+    const turnId = turnEl?.getAttribute?.('data-testid');
     if (turnId) return `${turnId}:${role}`;
 
-    return `${role}:${content.replace(/\s+/g, ' ').trim()}`;
+    const item = container.closest?.('[data-item-index], [data-index], [data-virtual-list-item-key]');
+    if (item) {
+      const attribute = ['data-item-index', 'data-index', 'data-virtual-list-item-key']
+        .find((name) => item.hasAttribute(name));
+      const siblings = Array.from(item.querySelectorAll('[data-message-author-role]'));
+      return `${attribute}:${item.getAttribute(attribute)}:${role}:${siblings.indexOf(roleElement)}`;
+    }
+
+    // Without a stable ID, only repeated scans of the same node are duplicates.
+    return roleElement || container;
   }
 
   extractAttachments(container) {
@@ -163,6 +181,12 @@ export class ChatGPTParser extends ChatParser {
     return convertToMarkdown(contentElement);
   }
 
+  /**
+   * Converts message content to Markdown, removes interface controls, and appends attachments and images.
+   * @param {Element} container - Mounted message container or standalone role element.
+   * @returns {{role: string, content: string, key: string|Element}|null} Message with its deduplication key,
+   *   or null when no content elements or exportable content are found.
+   */
   extractMessage(container) {
     const roleElements = this.getRoleElements(container);
     const roleElement = roleElements[0] || this.getRoleElement(container);
@@ -193,7 +217,7 @@ export class ChatGPTParser extends ChatParser {
     return {
       role,
       content,
-      key: this.getMessageKey(container, roleElement, role, content),
+      key: this.getMessageKey(container, roleElement, role),
     };
   }
 
@@ -210,156 +234,156 @@ export class ChatGPTParser extends ChatParser {
       .map(({ role, content }) => ({ role, content }));
   }
 
+  /**
+   * Collects messages while scrolling through mounted turns, then restores the scroll position.
+   * @returns {Promise<Array<{role: string, content: string}>>} Messages ordered by turn index.
+   */
   async extractAllConversationTurns() {
-    const turns = getConversationTurns(document);
-    if (turns.length === 0) return [];
-
     return collectMountedTurnMessages({
-      turns,
-      scrollRoot: findChatGPTScrollRoot(turns, document),
+      scrollRoot: findChatGPTScrollRoot([], document),
       extractMessage: (turn) => this.extractMessage(turn),
+      doc: document,
     });
   }
 
+  /**
+   * Extracts the conversation, using iframe heuristics only when standard extraction is empty.
+   * @param {{full?: boolean}} [options={}] Set full to false to read only mounted messages.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string}>, metadata?: Record<string, string>}>}
+   */
   async parse(options = {}) {
     const title = document.title || 'ChatGPT Session';
     const messages = [];
-
-    // Check if we have iframe-based content (deep research feature)
-    const iframes = document.querySelectorAll('iframe[src*="oaiusercontent.com"]');
-    if (iframes.length > 0) {
-      console.log('Detected iframe-based content, attempting extraction...');
-
-      // Try multiple strategies to extract content
-      let extractedContent = '';
-
-      // Strategy 1: Look for data in script tags or window objects
-      try {
-        // Check if any conversation data is exposed globally
-        if (window.conversationData || window.chatData) {
-          extractedContent = JSON.stringify(window.conversationData || window.chatData);
-        }
-      } catch (e) {
-        console.log('Global data access failed:', e);
-      }
-
-      // Strategy 2: Look for preloaded content in hidden elements
-      if (!extractedContent) {
-        const hiddenSelectors = [
-          '[data-conversation]',
-          '[data-messages]',
-          '.conversation-data',
-          '.chat-transcript',
-          'pre[data-conversation]',
-        ];
-
-        for (const selector of hiddenSelectors) {
-          const element = document.querySelector(selector);
-          if (element && element.textContent) {
-            extractedContent = element.textContent;
-            break;
-          }
-        }
-      }
-
-      // Strategy 3: Enhanced text extraction from main content
-      if (!extractedContent) {
-        const mainContent =
-          document.querySelector('main') ||
-          document.querySelector('[role="main"]') ||
-          document.querySelector('.conversation') ||
-          document.body;
-
-        if (mainContent) {
-          const textContent = mainContent.textContent || mainContent.innerText;
-          if (textContent && textContent.trim()) {
-            const lines = textContent.split('\n').filter((line) => line.trim());
-
-            // Look for conversation patterns
-            const conversationLines = lines.filter(
-              (line) =>
-                line.length > 20 && // Substantial content
-                !line.includes('ChatGPT') &&
-                !line.includes('Regenerate') &&
-                !line.includes('Copy code') &&
-                !line.includes('Continue') &&
-                !line.includes('Share') &&
-                !line.includes('Thumb') &&
-                !line.includes('New chat') &&
-                !line.includes('Menu') &&
-                !line.includes('Settings') &&
-                !line.includes('History'),
-            );
-
-            if (conversationLines.length > 0) {
-              extractedContent = conversationLines.join('\n\n');
-            }
-          }
-        }
-      }
-
-      // Strategy 4: Last resort - check for any meaningful content
-      if (!extractedContent) {
-        const allText = document.body.textContent || document.body.innerText;
-        if (allText && allText.trim().length > 100) {
-          extractedContent = allText.trim();
-        }
-      }
-
-      // If we found content, try to structure it
-      if (extractedContent) {
-        // Try to identify user vs assistant messages
-        const lines = extractedContent.split('\n').filter((line) => line.trim());
-
-        lines.forEach((line) => {
-          if (line.length > 10) {
-            // Simple heuristic: shorter lines are often user prompts
-            if (
-              line.length < 200 ||
-              line.includes('?') ||
-              line.includes('write') ||
-              line.includes('tell')
-            ) {
-              messages.push({
-                role: 'User',
-                content: line.trim(),
-              });
-            } else {
-              messages.push({
-                role: 'ChatGPT',
-                content: line.trim(),
-              });
-            }
-          }
-        });
-      }
-
-      // Add note about extraction method
-      if (messages.length > 0) {
-        messages.push({
-          role: 'ChatGPT',
-          content:
-            '*Note: Content extracted from iframe-based ChatGPT interface. Some formatting may be lost.*',
-        });
-      } else {
-        // Last resort - add a message explaining the limitation
-        messages.push({
-          role: 'ChatGPT',
-          content:
-            '*Note: ChatGPT is using iframe-based content that cannot be accessed by browser extensions. Please try exporting from a standard ChatGPT conversation.*',
-        });
-      }
-
-      return { title, messages };
-    }
 
     const fullExport = options.full !== false;
     const extractedMessages = fullExport
       ? await this.extractAllConversationTurns()
       : this.extractMountedMessages();
+
     messages.push(
       ...(extractedMessages.length > 0 ? extractedMessages : this.extractMountedMessages()),
     );
+
+    // If standard extraction found nothing, check if we have iframe-based content (deep research feature)
+    if (messages.length === 0) {
+      const iframes = document.querySelectorAll('iframe[src*="oaiusercontent.com"]');
+      if (iframes.length > 0) {
+        console.log('Detected iframe-based content, attempting extraction...');
+
+        // Try multiple strategies to extract content
+        let extractedContent = '';
+
+        // Strategy 1: Look for data in script tags or window objects
+        try {
+          if (window.conversationData || window.chatData) {
+            extractedContent = JSON.stringify(window.conversationData || window.chatData);
+          }
+        } catch (e) {
+          console.log('Global data access failed:', e);
+        }
+
+        // Strategy 2: Look for preloaded content in hidden elements
+        if (!extractedContent) {
+          const hiddenSelectors = [
+            '[data-conversation]',
+            '[data-messages]',
+            '.conversation-data',
+            '.chat-transcript',
+            'pre[data-conversation]',
+          ];
+
+          for (const selector of hiddenSelectors) {
+            const element = document.querySelector(selector);
+            if (element && element.textContent) {
+              extractedContent = element.textContent;
+              break;
+            }
+          }
+        }
+
+        // Strategy 3: Enhanced text extraction from main content
+        if (!extractedContent) {
+          const mainContent =
+            document.querySelector('main') ||
+            document.querySelector('[role="main"]') ||
+            document.querySelector('.conversation') ||
+            document.body;
+
+          if (mainContent) {
+            const textContent = mainContent.textContent || mainContent.innerText;
+            if (textContent && textContent.trim()) {
+              const lines = textContent.split('\n').filter((line) => line.trim());
+
+              const conversationLines = lines.filter(
+                (line) =>
+                  line.length > 20 &&
+                  !line.includes('ChatGPT') &&
+                  !line.includes('Regenerate') &&
+                  !line.includes('Copy code') &&
+                  !line.includes('Continue') &&
+                  !line.includes('Share') &&
+                  !line.includes('Thumb') &&
+                  !line.includes('New chat') &&
+                  !line.includes('Menu') &&
+                  !line.includes('Settings') &&
+                  !line.includes('History'),
+              );
+
+              if (conversationLines.length > 0) {
+                extractedContent = conversationLines.join('\n\n');
+              }
+            }
+          }
+        }
+
+        if (!extractedContent) {
+          const allText = document.body.textContent || document.body.innerText;
+          if (allText && allText.trim().length > 100) {
+            extractedContent = allText.trim();
+          }
+        }
+
+        if (extractedContent) {
+          const lines = extractedContent.split('\n').filter((line) => line.trim());
+          lines.forEach((line) => {
+            if (line.length > 10) {
+              if (
+                line.length < 200 ||
+                line.includes('?') ||
+                line.includes('write') ||
+                line.includes('tell')
+              ) {
+                messages.push({
+                  role: 'User',
+                  content: line.trim(),
+                });
+              } else {
+                messages.push({
+                  role: 'ChatGPT',
+                  content: line.trim(),
+                });
+              }
+            }
+          });
+        }
+
+        if (messages.length > 0) {
+          messages.push({
+            role: 'ChatGPT',
+            content:
+              '*Note: Content extracted from iframe-based ChatGPT interface. Some formatting may be lost.*',
+          });
+        } else {
+          messages.push({
+            role: 'ChatGPT',
+            content:
+              '*Note: ChatGPT is using iframe-based content that cannot be accessed by browser extensions. Please try exporting from a standard ChatGPT conversation.*',
+          });
+        }
+
+        return { title, messages };
+      }
+    }
 
     const metadata = {
       Source: 'ChatGPT',

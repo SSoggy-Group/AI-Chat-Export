@@ -1,14 +1,167 @@
 import { ChatParser } from './base.js';
 import { convertToMarkdown } from '../utils/html-to-markdown.js';
 
+const CLAUDE_API_URL = 'https://claude.ai/api/organizations';
+
+/**
+ * Formats extracted attachment text and file names as Markdown without reading blob contents.
+ * @param {Object} [options={}] - Attachment data from a user message.
+ * @param {Array<{file_type?: string, file_name?: string, extracted_content?: string}>} [options.attachments] - Extracted attachments.
+ * @param {Array<{file_name?: string}>} [options.files] - Files represented by name only.
+ * @returns {string} Combined attachment and file descriptions.
+ */
+function processAttachments({ attachments, files } = {}) {
+  const safeAttachments = Array.isArray(attachments) ? attachments : [];
+  const safeFiles = Array.isArray(files) ? files : [];
+
+  const formatAttachment = ({ file_type, file_name, extracted_content }) => {
+    const fileType = file_type?.split('/')[1] || file_type;
+    const content = fileType
+      ? `\`\`\`${fileType}\n${extracted_content}\n\`\`\``
+      : extracted_content;
+    return `\n\n${file_name}:\n\n${content}`;
+  };
+
+  const formatFile = ({ file_name }) =>
+    file_name ? `\n\n${file_name} (can't show blob content)\n\n` : '';
+
+  return (
+    safeAttachments.map(formatAttachment).join('') + safeFiles.map(formatFile).join('')
+  );
+}
+
+/**
+ * Converts a Claude content block into text, including artifact and REPL tool inputs.
+ * @param {{type: string, text?: string, name?: string, input?: Object}} item - API content block.
+ * @returns {string} Markdown content, or an empty string for unsupported tool uses.
+ */
+function processContentItem(item) {
+  switch (item.type) {
+    case 'text':
+      return item.text || '';
+    case 'tool_use':
+      if (item.name === 'artifacts') {
+        const { id, type, language, content, title } = item.input || {};
+        if (content) {
+          const lang = language || type || '';
+          return `\n\n> **Artifact: ${title || id}**\n\`\`\`${lang}\n${content}\n\`\`\`\n\n`;
+        }
+      } else if (item.name === 'repl') {
+        const code = item.input?.code || '';
+        return code ? `\n\`\`\`javascript\n${code}\n\`\`\`\n` : '';
+      }
+      return '';
+    default:
+      return item.text || '';
+  }
+}
+
+/**
+ * Normalizes an API message, separating thinking and appending user attachments.
+ * @param {{sender: string, content: string|Object[], attachments?: Object[], files_v2?: Object[]}} msg - Claude API message.
+ * @returns {{role: string, content: string, thinking?: string}} Exportable message.
+ */
+function processApiMessage(msg) {
+  const { sender, content, attachments, files_v2 } = msg;
+  let message = '';
+  let thinking = '';
+
+  if (Array.isArray(content)) {
+    const textParts = [];
+    content.forEach((item) => {
+      if (item.type === 'thinking') {
+        thinking = (thinking ? thinking + '\n\n' : '') + (item.thinking || '');
+      } else {
+        const text = processContentItem(item);
+        if (text) textParts.push(text);
+      }
+    });
+    message = textParts.join('');
+  } else if (typeof content === 'string') {
+    message = content;
+  }
+
+  if (sender === 'human' || sender === 'user') {
+    message += processAttachments({ attachments, files: files_v2 });
+  }
+
+  const role = (sender === 'human' || sender === 'user') ? 'User' : 'Claude';
+  return {
+    role,
+    content: message.trim(),
+    ...(thinking ? { thinking: thinking.trim() } : {}),
+  };
+}
+
 export class ClaudeParser extends ChatParser {
   isAvailable(url) {
     return url.includes('claude.ai');
   }
 
-  async parse() {
+  /**
+   * Fetches the current conversation using the signed-in user's organization and session.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string, thinking?: string}>, metadata: Record<string, string>}|null>}
+   *   Conversation data, or null for missing identifiers, unsuccessful responses, or missing messages.
+   * @throws {Error} Propagates network and JSON parsing failures for the caller to handle.
+   */
+  async parseFromAPI() {
+    const convMatch = window.location.href.match(/\/chat\/([a-zA-Z0-9_-]+)/);
+    const convId = convMatch ? convMatch[1] : null;
+    if (!convId) return null;
+
+    // Get Organization ID with timeout
+    const orgRes = await fetch(CLAUDE_API_URL, {
+      credentials: 'include',
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!orgRes.ok) return null;
+
+    const orgs = await orgRes.json();
+    if (!Array.isArray(orgs) || orgs.length === 0) return null;
+
+    const chatOrg = orgs.find((org) => org.capabilities?.includes('chat')) || orgs[0];
+    const orgId = chatOrg?.uuid;
+    if (!orgId) return null;
+
+    // Fetch conversation details with timeout
+    const convRes = await fetch(
+      `${CLAUDE_API_URL}/${orgId}/chat_conversations/${convId}?tree=True&rendering_mode=messages&render_all_tools=true`,
+      {
+        credentials: 'include',
+        headers: { accept: '*/*', 'content-type': 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!convRes.ok) return null;
+
+    const data = await convRes.json();
+    if (!data || !Array.isArray(data.chat_messages) || data.chat_messages.length === 0) {
+      return null;
+    }
+
+    const title = data.name || document.title || 'Claude Chat';
+    const messages = data.chat_messages.map(processApiMessage).filter((m) => m.content);
+
+    return {
+      title,
+      messages,
+      metadata: {
+        Source: 'Claude',
+        Date: new Date().toLocaleString(),
+        Link: window.location.href,
+        Model: data.model || 'Claude',
+      },
+    };
+  }
+
+  /**
+   * Collects mounted messages and artifacts while scrolling, then restores the scroll position.
+   * Refreshes candidates by node or virtual-item identity and retains first-seen order.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string}>, metadata: Record<string, string>}>}
+   */
+  async parseFromDOM() {
     const title = document.title || 'Claude Chat';
-    const messages = [];
 
     // Inject the React reader script if not already injected
     if (!document.getElementById('ai-export-claude-reader')) {
@@ -16,10 +169,9 @@ export class ClaudeParser extends ChatParser {
       script.src = chrome.runtime.getURL('content/claude_react_reader.js');
       script.id = 'ai-export-claude-reader';
       script.onload = function () {
-        this.remove(); // Clean up script tag
+        this.remove();
       };
       (document.head || document.documentElement).appendChild(script);
-      // Give it a moment to initialize
       await new Promise((r) => setTimeout(r, 100));
     }
 
@@ -35,148 +187,184 @@ export class ClaudeParser extends ChatParser {
         window.addEventListener('message', handler);
         window.postMessage({ type: 'ReqAtftInfo', idx: index }, window.location.origin);
 
-        // Timeout fallback
         setTimeout(() => {
           window.removeEventListener('message', handler);
           resolve(null);
-        }, 1000); // 1s timeout
+        }, 1000);
       });
     };
 
-    // Claude Structure 2024/2025 Refinement
-    // Messages are usually in a container. We want to capture the flow.
-    // User messages are reliably [data-testid="user-message"]
+    const messagesMap = new Map();
 
-    // Assistant messages are trickier. They often don't have a single specific class in newer builds.
-    // However, they adhere to a structure. usually .font-claude-message OR just the block that isn't a user message.
-    // Artifacts are .artifact-block-cell (which might be inside or outside the main text block depending on view)
-
-    // Strategy: Select ALL potential top-level message containers.
-    // A common pattern in Claude is a list of .group
-
-    // Let's rely on the specific semantic markers we know exist:
-    // 1. [data-testid="user-message"]
-    // 2. .font-claude-message (Legacy/Stable?)
-    // 3. .artifact-block-cell
-    // 4. If those fail for assistant, we might need to look for specific container classes found in research.
-
-    // Let's try a broad selection and filter.
-
-    // We need to capture the *sequence*.
-    // The most robust way is finding the main chat list container.
-    // Usually `div.flex-1.overflow-y-auto` or similar contains the chat.
-
-    // Let's assume the previous method of querying all specific items in document order is the safest fallback
-    // IF we ensure we catch the assistant text.
-
-    // UPDATED STRATEGY:
-    // 1. Find all `div` elements that *contain* text but aren't too deep, roughly looking like messages? Too risky.
-    // 2. Use the strict selectors but assume .font-claude-message might be missing.
-    //    Look for `div.font-serif` or classes sharing stylistic properties?
-
-    // Let's stick to the knowns but check strict ordering.
-    // Precise selectors (Best formatting)
     const strictSelectors = [
       '[data-testid="user-message"]',
       '.font-claude-message',
       '.font-claude-response',
       '.artifact-block-cell',
+      '.standard-markdown',
+      '[data-is-streaming]',
     ].join(', ');
 
-    // Fallback selectors (Good for missing content, but maybe less formatting)
-    const fallbackSelectors = ['div.font-serif'].join(', ');
+    const fallbackSelectors = ['div.font-serif', 'div[class*="font-claude"]'].join(', ');
 
-    const strictCandidates = Array.from(document.querySelectorAll(strictSelectors));
-    const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
-
-    // Filter fallbacks: Only keep them if they DO NOT overlap with any strict candidate
-    // If a fallback contains a strict candidate, we prefer the strict (child) for better formatting.
-    // If a fallback is inside a strict candidate, we prefer the strict (parent).
-    const validFallbacks = fallbackCandidates.filter((fallback) => {
-      const overlapsWithError = strictCandidates.some(
-        (strict) => strict.contains(fallback) || fallback.contains(strict),
+    /** Converts mounted candidates and refreshes previously collected entries. */
+    const scan = async () => {
+      const rawStrict = Array.from(document.querySelectorAll(strictSelectors));
+      const strictCandidates = rawStrict.filter(
+        (el) => el.matches('.artifact-block-cell') ||
+          !rawStrict.some((other) => other !== el && other.contains(el)),
       );
-      return !overlapsWithError;
-    });
 
-    // Combine and deduplicate
-    // Use a Set to ensure uniqueness just in case
-    const combined = [...new Set([...strictCandidates, ...validFallbacks])];
+      const rawFallback = Array.from(document.querySelectorAll(fallbackSelectors));
+      const fallbackCandidates = rawFallback.filter(
+        (el) => !rawFallback.some((other) => other !== el && other.contains(el)),
+      );
 
-    // Sort by document position
-    const allElements = combined.sort((a, b) => {
-      return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
+      const validFallbacks = fallbackCandidates.filter((fallback) => {
+        const overlaps = strictCandidates.some(
+          (strict) => strict.contains(fallback) || fallback.contains(strict),
+        );
+        return !overlaps;
+      });
 
-    // Pre-calculate artifact indices
-    const artifactElements = document.querySelectorAll('.artifact-block-cell');
-    const artifactMap = new Map();
-    artifactElements.forEach((el, index) => artifactMap.set(el, index));
+      const combined = [...new Set([...strictCandidates, ...validFallbacks])];
+      const allElements = combined.sort((a, b) => {
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
 
-    for (const el of allElements) {
-      let role = 'Unknown';
-      let content = '';
+      const artifactElements = Array.from(document.querySelectorAll('.artifact-block-cell'));
+      const artifactMap = new Map();
+      artifactElements.forEach((el, index) => artifactMap.set(el, index));
 
-      if (el.matches('[data-testid="user-message"]')) {
-        role = 'User';
-        // Convert HTML to markdown
-        const clone = el.cloneNode(true);
-        clone.querySelectorAll('button').forEach((btn) => btn.remove());
-        content = convertToMarkdown(clone);
-      } else if (
-        el.matches('.font-claude-message') ||
-        el.matches('.font-claude-response') ||
-        el.matches('div.font-serif')
-      ) {
-        role = 'Claude';
-        // Convert HTML to markdown
-        const clone = el.cloneNode(true);
-        clone.querySelectorAll('button').forEach((btn) => btn.remove());
-        content = convertToMarkdown(clone);
-      } else if (el.matches('.artifact-block-cell')) {
-        role = 'Claude Artifact';
+      const itemCandidateCounts = new Map();
+      for (const el of allElements) {
+        const role = el.matches('.artifact-block-cell') ? 'Claude Artifact'
+          : el.closest('[data-testid="user-message"]') ? 'User' : 'Claude';
+        const virtuosoItem = el.closest('[data-item-index], [data-index]');
+        const itemIdx = virtuosoItem?.getAttribute('data-item-index') ?? virtuosoItem?.getAttribute('data-index');
+        let key = el;
+        if (itemIdx !== undefined && itemIdx !== null) {
+          const itemRole = `${itemIdx}:${role}`;
+          const ordinal = itemCandidateCounts.get(itemRole) || 0;
+          itemCandidateCounts.set(itemRole, ordinal + 1);
+          key = `${itemRole}:${ordinal}`;
+        }
 
-        const index = artifactMap.get(el);
-        if (index !== undefined) {
-          const info = await getArtifactInfo(index);
-          if (info) {
-            const artTitle = info.title || 'Artifact';
-            const artContent = info.content || '';
-            const artLang = info.language || 'text';
-            if (artLang === 'markdown' || artLang === 'text') {
-              // Render as quoted markdown block to allow formatting to be visible in preview
-              const quotedContent = artContent
-                .split('\n')
-                .map((line) => `> ${line}`)
-                .join('\n');
-              content = `\n\n> **Artifact: ${artTitle}**\n\n${quotedContent}\n\n`;
+        let content = '';
+
+        if (role === 'User') {
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
+          content = convertToMarkdown(clone);
+        } else if (el.matches('.artifact-block-cell')) {
+          const index = artifactMap.get(el);
+          if (index !== undefined) {
+            const info = await getArtifactInfo(index);
+            if (info) {
+              const artTitle = info.title || 'Artifact';
+              const artContent = info.content || '';
+              const artLang = info.language || 'text';
+              if (artLang === 'markdown' || artLang === 'text') {
+                const quotedContent = artContent
+                  .split('\n')
+                  .map((line) => `> ${line}`)
+                  .join('\n');
+                content = `\n\n> **Artifact: ${artTitle}**\n\n${quotedContent}\n\n`;
+              } else {
+                content = `\n\n> **Artifact: ${artTitle}**\n\`\`\`${artLang}\n${artContent}\n\`\`\`\n\n`;
+              }
             } else {
-              content = `\n\n> **Artifact: ${artTitle}**\n\`\`\`${artLang}\n${artContent}\n\`\`\`\n\n`;
+              const header =
+                el.querySelector('.flex.items-center.gap-2') || el.querySelector('.font-bold');
+              const fallbackTitle = header ? header.innerText.split('\n')[0] : 'Unknown Artifact';
+              content = `\n> [Artifact: ${fallbackTitle} - content extraction failed]\n`;
             }
-          } else {
-            // Fallback: try to read the header from DOM
-            const header =
-              el.querySelector('.flex.items-center.gap-2') || el.querySelector('.font-bold');
-            const fallbackTitle = header ? header.innerText.split('\n')[0] : 'Unknown Artifact';
-            content = `\n> [Artifact: ${fallbackTitle} - content extraction failed]\n`;
           }
+        } else {
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
+          content = convertToMarkdown(clone);
+        }
+
+        const trimmed = content?.trim();
+        if (trimmed) {
+          messagesMap.set(key, { role, content: trimmed });
         }
       }
-
-      if (content) {
-        messages.push({ role, content });
-      }
-    }
-
-    // Backup heuristics removed as we now include .font-serif in the primary pass.
-
-    const metadata = {
-      Source: 'Claude',
-      Date: new Date().toLocaleString(),
-      Link: window.location.href,
-      Model: 'Claude',
     };
 
-    return { title, messages, metadata };
+    // Find actual scrollable container
+    const scrollCandidates = [
+      document.querySelector('main .overflow-y-auto'),
+      document.querySelector('.overflow-y-auto'),
+      document.querySelector('main'),
+      document.scrollingElement || document.documentElement,
+    ];
+    const scrollContainer = scrollCandidates.find(
+      (el) => el && el.scrollHeight > el.clientHeight + 40,
+    );
+
+    if (scrollContainer) {
+      const origTop = scrollContainer.scrollTop;
+      try {
+        scrollContainer.scrollTop = 0;
+        await new Promise((r) => setTimeout(r, 140));
+        await scan();
+
+        const step = Math.max(300, Math.floor(scrollContainer.clientHeight * 0.75));
+        let stalled = 0;
+        while (
+          scrollContainer.scrollTop < scrollContainer.scrollHeight - scrollContainer.clientHeight - 10 &&
+          stalled < 3
+        ) {
+          const prevTop = scrollContainer.scrollTop;
+          scrollContainer.scrollTop = Math.min(scrollContainer.scrollTop + step, scrollContainer.scrollHeight);
+          await new Promise((r) => setTimeout(r, 120));
+          await scan();
+
+          if (scrollContainer.scrollTop === prevTop) {
+            stalled++;
+          } else {
+            stalled = 0;
+          }
+        }
+
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        await new Promise((r) => setTimeout(r, 120));
+        await scan();
+      } finally {
+        scrollContainer.scrollTop = origTop;
+      }
+    } else {
+      await scan();
+    }
+
+    return {
+      title,
+      messages: Array.from(messagesMap.values()),
+      metadata: {
+        Source: 'Claude',
+        Date: new Date().toLocaleString(),
+        Link: window.location.href,
+        Model: 'Claude',
+      },
+    };
+  }
+
+  /**
+   * Uses API messages when available, falling back to DOM extraction on empty results or errors.
+   * @returns {Promise<{title: string, messages: Array<{role: string, content: string, thinking?: string}>, metadata: Record<string, string>}>}
+   */
+  async parse() {
+    try {
+      const apiResult = await this.parseFromAPI();
+      if (apiResult && apiResult.messages && apiResult.messages.length > 0) {
+        return apiResult;
+      }
+    } catch (e) {
+      console.warn('[ClaudeParser] API fetch failed, falling back to DOM extraction:', e);
+    }
+
+    return this.parseFromDOM();
   }
 }
