@@ -88,13 +88,17 @@ export class DeepSeekParser extends ChatParser {
     };
 
     // Step-scroll to handle virtualization
+    const scrollCandidates = [
+      document.querySelector('.ds-virtual-list'),
+      document.querySelector('div[class*="virtual-list"]'),
+      document.querySelector('main .overflow-y-auto'),
+      document.querySelector('.overflow-y-auto'),
+      document.querySelector('main'),
+      document.scrollingElement,
+    ];
     const scrollContainer =
-      document.querySelector('.ds-virtual-list') ||
-      document.querySelector('div[class*="virtual-list"]') ||
-      document.querySelector('main .overflow-y-auto') ||
-      document.querySelector('.overflow-y-auto') ||
-      document.querySelector('main') ||
-      document.scrollingElement;
+      scrollCandidates.find((candidate) => candidate && candidate.scrollHeight > candidate.clientHeight + 60) ||
+      scrollCandidates.find(Boolean);
 
     if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight + 60) {
       const origTop = scrollContainer.scrollTop;

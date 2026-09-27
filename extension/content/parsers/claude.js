@@ -207,7 +207,12 @@ export class ClaudeParser extends ChatParser {
 
     /** Converts mounted message and artifact candidates and adds unseen role/content pairs. */
     const scan = async () => {
-      const strictCandidates = Array.from(document.querySelectorAll(strictSelectors));
+      const strictMatches = Array.from(document.querySelectorAll(strictSelectors));
+      const strictCandidates = strictMatches.filter(
+        (candidate) => !strictMatches.some(
+          (other) => other !== candidate && other.contains(candidate),
+        ),
+      );
       const fallbackCandidates = Array.from(document.querySelectorAll(fallbackSelectors));
 
       const validFallbacks = fallbackCandidates.filter((fallback) => {
