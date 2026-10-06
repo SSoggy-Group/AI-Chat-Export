@@ -37,14 +37,13 @@ export class PerplexityParser extends ChatParser {
     const selectorString = [...userSelectors, ...assistantSelectors].join(', ');
     const elements = threadContainer.querySelectorAll(selectorString);
 
+    const userSelectorString = userSelectors.join(', ');
+    const assistantSelectorString = assistantSelectors.join(', ');
+
     // Helper to determine role
     const getRole = (el) => {
-      for (const s of userSelectors) {
-        if (el.matches(s)) return 'User';
-      }
-      for (const s of assistantSelectors) {
-        if (el.matches(s)) return 'Perplexity';
-      }
+      if (el.matches(userSelectorString)) return 'User';
+      if (el.matches(assistantSelectorString)) return 'Perplexity';
       return 'Unknown';
     };
 

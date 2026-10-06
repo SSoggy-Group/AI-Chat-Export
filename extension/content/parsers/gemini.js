@@ -676,17 +676,9 @@ export class GeminiParser extends ChatParser {
     // If still no sections, try to split by common delimiters
     if (sections.length === 0) {
       console.log('[Gemini Parser] Trying delimiter splitting...');
-      const delimiterPatterns = [
-        /\n\s*You said\s*\n/i,
-        /\n\s*Response\s*\n/i,
-        /\n\s*Prompt\s*\n/i,
-        /\n\s*I've completed\s*\n/i,
-      ];
-
-      let parts = [text];
-      delimiterPatterns.forEach((pattern) => {
-        parts = parts.flatMap((part) => part.split(pattern));
-      });
+      const delimiterPattern =
+        /\n\s*(?:You said|Response|Prompt|I've completed)\s*\n/i;
+      const parts = text.split(delimiterPattern);
 
       parts.forEach((part, index) => {
         const trimmedPart = part.trim();
