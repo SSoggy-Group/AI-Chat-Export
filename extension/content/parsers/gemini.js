@@ -34,7 +34,6 @@ export class GeminiParser extends ChatParser {
 
       // Strategy 2: Look for title in page content (Deep Research reports often have titles in content)
       if (!title) {
-        console.log('[Gemini Parser] Strategy 2: Looking for title in page content...');
         const contentTitles = document.querySelectorAll(
           'main h1, main h2, article h1, article h2, .content h1, .content h2',
         );
