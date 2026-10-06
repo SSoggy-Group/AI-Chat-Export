@@ -676,17 +676,9 @@ export class GeminiParser extends ChatParser {
     // If still no sections, try to split by common delimiters
     if (sections.length === 0) {
       console.log('[Gemini Parser] Trying delimiter splitting...');
-      const delimiterPatterns = [
-        /\n\s*You said\s*\n/i,
-        /\n\s*Response\s*\n/i,
-        /\n\s*Prompt\s*\n/i,
-        /\n\s*I've completed\s*\n/i,
-      ];
-
-      let parts = [text];
-      delimiterPatterns.forEach((pattern) => {
-        parts = parts.flatMap((part) => part.split(pattern));
-      });
+      const delimiterPattern =
+        /\n\s*(?:You said|Response|Prompt|I've completed)\s*\n/i;
+      const parts = text.split(delimiterPattern);
 
       parts.forEach((part, index) => {
         const trimmedPart = part.trim();
@@ -786,18 +778,26 @@ export class GeminiParser extends ChatParser {
     ];
 
     let parts = [text];
-    delimiters.forEach((delimiter) => {
-      parts = parts.flatMap((part) => part.split(delimiter));
-    });
+    for (let i = 0; i < delimiters.length; i++) {
+      const delimiter = delimiters[i];
+      const nextParts = [];
+      for (let j = 0; j < parts.length; j++) {
+        const subParts = parts[j].split(delimiter);
+        for (let k = 0; k < subParts.length; k++) {
+          nextParts.push(subParts[k]);
+        }
+      }
+      parts = nextParts;
+    }
 
     // Filter and clean sections
-    parts.forEach((part) => {
-      const cleaned = part.trim();
-      if (cleaned.length > 50 && !cleaned.match(/^\d+$/)) {
+    for (let i = 0; i < parts.length; i++) {
+      const cleaned = parts[i].trim();
+      if (cleaned.length > 50 && !/^\d+$/.test(cleaned)) {
         sections.push(cleaned);
         console.log('[Gemini Parser] Added split section, length:', cleaned.length);
       }
-    });
+    }
 
     console.log('[Gemini Parser] Text splitting complete, sections:', sections.length);
     return sections;

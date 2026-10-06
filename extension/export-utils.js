@@ -170,13 +170,34 @@ function convertToHTML(title, messages) {
 			return `<pre><code${b.lang ? ` class="language-${b.lang}"` : ''}>${b.code}</code></pre>`
 		})
 
+		function sanitizeUrl(url) {
+			if (!url) return "#"
+			const cleanUrl = url.replace(/[\x00-\x1F\x7F-\x9F\s]/g, "")
+			const colonIndex = cleanUrl.indexOf(":")
+			if (colonIndex !== -1) {
+				const candidateScheme = cleanUrl.substring(0, colonIndex)
+				if (/^[a-zA-Z][a-zA-Z0-9+.-]*$/.test(candidateScheme)) {
+					const scheme = candidateScheme.toLowerCase()
+					if (!["http", "https", "mailto", "ftp", "tel"].includes(scheme)) {
+						return "#"
+					}
+				}
+			}
+			return url
+				.replace(/&/g, "&amp;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+		}
+
 		function applyInline(s) {
 			return s
-				.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-				.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-				.replace(/\*(.+?)\*/g, '<em>$1</em>')
-				.replace(/~~(.+?)~~/g, '<del>$1</del>')
-				.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+				.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+				.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+				.replace(/\*(.+?)\*/g, "<em>$1</em>")
+				.replace(/~~(.+?)~~/g, "<del>$1</del>")
+				.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => `<a href="${sanitizeUrl(url)}">${text}</a>`)
 				.replace(/\x00IC(\d+)\x00/g, (_, i) => `<code>${inlineCodes[parseInt(i)]}</code>`)
 		}
 
@@ -234,14 +255,14 @@ hr { border: none; border-top: 1px solid #30363d; margin: 24px 0; }
 <p class="subtitle">AI Chat Export • ${esc(botName)}</p>
 `
 
-	messages.forEach(({ source, message, thinking }) => {
+	const articlesHtml = messages.map(({ source, message, thinking }) => {
 		const role = getBotName(source)
 		const cls = source === 'user' ? 'human' : 'assistant'
 		const thinkingHtml = thinking ? `<details class="thinking"><summary>Thinking process</summary><div>${esc(thinking).replace(/\n/g, '<br>')}</div></details>` : ''
-		html += `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
-	})
-	html += `</body>\n</html>`
-	return html
+		return `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
+	}).join('')
+
+	return html + articlesHtml + '</body>\n</html>'
 }
 
 function convertToJSON(title, messages) {
@@ -383,25 +404,28 @@ function convertToDOCX(title, messages) {
 			.replace(/"/g, '&quot;')
 	}
 
-	let paragraphs = ''
-
 	// title
-	paragraphs += `<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="48"/></w:rPr><w:t xml:space="preserve">${escapeXML(title)}</w:t></w:r></w:p>`
+	const titleParagraph = `<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="48"/></w:rPr><w:t xml:space="preserve">${escapeXML(title)}</w:t></w:r></w:p>`
 
-	messages.forEach(({ source, message, thinking }) => {
+	// messages
+	const messageParagraphs = messages.map(({ source, message }) => {
 		const role = getBotName(source)
 		const color = source === 'user' ? '666666' : 'D97757'
 
 		// role header
-		paragraphs += `<w:p><w:r><w:rPr><w:b/><w:color w:val="${color}"/><w:sz w:val="28"/></w:rPr><w:t>${escapeXML(role)}</w:t></w:r></w:p>`
+		const roleHeader = `<w:p><w:r><w:rPr><w:b/><w:color w:val="${color}"/><w:sz w:val="28"/></w:rPr><w:t>${escapeXML(role)}</w:t></w:r></w:p>`
 
 		// message lines
 		const lines = markdownToPlainText(message).split('\n')
-		paragraphs += lines.map(line => `<w:p><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXML(line)}</w:t></w:r></w:p>`).join('')
+		const lineParagraphs = lines.map(line => `<w:p><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXML(line)}</w:t></w:r></w:p>`).join('')
 
 		// separator
-		paragraphs += `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`
-	})
+		const separator = `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`
+
+		return roleHeader + lineParagraphs + separator
+	}).join('')
+
+	const paragraphs = titleParagraph + messageParagraphs
 
 	const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`
 
