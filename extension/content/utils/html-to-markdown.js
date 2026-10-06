@@ -111,7 +111,7 @@ export function convertToMarkdown(htmlContent, options = {}) {
 
         // Convert each cell's HTML to markdown using the isolated service
         const cellContents = cells.map((cell) => {
-          let cellMarkdown = cellTurndown.turndown(cell.innerHTML);
+          let cellMarkdown = cellTurndown.turndown(cell);
           // Replace any actual newlines that Turndown generated (e.g. from P tags) with <br>
           // as tables cannot have literal newlines in GFM.
           return cellMarkdown.trim().replace(/\n/g, '<br>');
