@@ -20,7 +20,6 @@ export class GeminiParser extends ChatParser {
       );
       if (deepResearchTitle) {
         const text = deepResearchTitle.innerText.trim();
-        console.log('[Gemini Parser] Found potential title:', text);
         if (
           text.length > 5 &&
           !text.includes('Gemini') &&
