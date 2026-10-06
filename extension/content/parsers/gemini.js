@@ -151,10 +151,8 @@ export class GeminiParser extends ChatParser {
           // Then, check for model response
           const modelResponse = container.querySelector('model-response');
           if (modelResponse) {
-            console.log('[Gemini Parser] Found model response...');
             const messageContent = modelResponse.querySelector('message-content');
             if (messageContent) {
-              console.log('[Gemini Parser] Found message content...');
               const markdownDiv = messageContent.querySelector(
                 '.markdown.markdown-main-panel, .markdown',
               );
