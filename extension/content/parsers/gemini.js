@@ -128,7 +128,6 @@ export class GeminiParser extends ChatParser {
             console.log('[Gemini Parser] Found user query...');
             const queryText = userQuery.querySelector('.query-text');
             if (queryText) {
-              console.log('[Gemini Parser] Found query text...');
               const clone = queryText.cloneNode(true);
               clone
                 .querySelectorAll('.cdk-visually-hidden, [class*="screen-reader"]')
