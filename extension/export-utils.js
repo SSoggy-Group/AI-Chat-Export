@@ -170,13 +170,34 @@ function convertToHTML(title, messages) {
 			return `<pre><code${b.lang ? ` class="language-${b.lang}"` : ''}>${b.code}</code></pre>`
 		})
 
+		function sanitizeUrl(url) {
+			if (!url) return "#"
+			const cleanUrl = url.replace(/[\x00-\x1F\x7F-\x9F\s]/g, "")
+			const colonIndex = cleanUrl.indexOf(":")
+			if (colonIndex !== -1) {
+				const candidateScheme = cleanUrl.substring(0, colonIndex)
+				if (/^[a-zA-Z][a-zA-Z0-9+.-]*$/.test(candidateScheme)) {
+					const scheme = candidateScheme.toLowerCase()
+					if (!["http", "https", "mailto", "ftp", "tel"].includes(scheme)) {
+						return "#"
+					}
+				}
+			}
+			return url
+				.replace(/&/g, "&amp;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+		}
+
 		function applyInline(s) {
 			return s
-				.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-				.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-				.replace(/\*(.+?)\*/g, '<em>$1</em>')
-				.replace(/~~(.+?)~~/g, '<del>$1</del>')
-				.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+				.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+				.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+				.replace(/\*(.+?)\*/g, "<em>$1</em>")
+				.replace(/~~(.+?)~~/g, "<del>$1</del>")
+				.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => `<a href="${sanitizeUrl(url)}">${text}</a>`)
 				.replace(/\x00IC(\d+)\x00/g, (_, i) => `<code>${inlineCodes[parseInt(i)]}</code>`)
 		}
 
@@ -234,14 +255,14 @@ hr { border: none; border-top: 1px solid #30363d; margin: 24px 0; }
 <p class="subtitle">AI Chat Export • ${esc(botName)}</p>
 `
 
-	messages.forEach(({ source, message, thinking }) => {
+	const articlesHtml = messages.map(({ source, message, thinking }) => {
 		const role = getBotName(source)
 		const cls = source === 'user' ? 'human' : 'assistant'
 		const thinkingHtml = thinking ? `<details class="thinking"><summary>Thinking process</summary><div>${esc(thinking).replace(/\n/g, '<br>')}</div></details>` : ''
-		html += `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
-	})
-	html += `</body>\n</html>`
-	return html
+		return `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
+	}).join('')
+
+	return html + articlesHtml + '</body>\n</html>'
 }
 
 function convertToJSON(title, messages) {

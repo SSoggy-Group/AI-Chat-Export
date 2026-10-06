@@ -1,3 +1,4 @@
+import { convertToMarkdown } from '../content/utils/html-to-markdown.js';
 // Browser regression suite. Serve the repo and call runParserDOMTests() from a
 // page importing this module; no extension or authenticated provider is needed.
 import { ChatGPTParser } from '../content/parsers/chatgpt.js';
@@ -175,6 +176,14 @@ export async function runParserDOMTests() {
         { role: 'DeepSeek', content: 'Complete answer', thinking: 'Reasoning' },
       ]);
       equal(root.scrollTop, 75);
+    });
+
+    await test('convertToMarkdown converts table with script tags without executing scripts', async () => {
+      const tableHTML = '<table><tr><th>Header</th></tr><tr><td><script>window.xssExecuted=true;</script>Safe Cell</td></tr></table>';
+      const markdown = convertToMarkdown(tableHTML);
+      equal(markdown.includes('Safe Cell'), true);
+      equal(markdown.includes('script'), false);
+      equal(window.xssExecuted, undefined);
     });
   } finally {
     window.setTimeout = originalTimeout;
