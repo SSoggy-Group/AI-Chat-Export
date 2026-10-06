@@ -106,7 +106,6 @@ export class GeminiParser extends ChatParser {
       const messages = [];
       const seenTexts = new Set();
 
-      console.log('[Gemini Parser] Starting content extraction...');
       let extractionAttempted = false;
 
       // 2. Content Extraction - Enhanced for Deep Research
