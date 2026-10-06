@@ -140,10 +140,6 @@ export class GeminiParser extends ChatParser {
                   role: 'User',
                   content: userText,
                 });
-                console.log(
-                  '[Gemini Parser] Added user message:',
-                  userText.substring(0, 50) + '...',
-                );
               }
             }
           }
