@@ -89,7 +89,6 @@ export class GeminiParser extends ChatParser {
       }
 
       if (!title) {
-        console.log('[Gemini Parser] Strategy 5: Using document.title...');
         title = document.title
           .replace(/Google/g, '')
           .replace(/Gemini/g, '')
