@@ -38,7 +38,6 @@ export class GeminiParser extends ChatParser {
         const contentTitles = document.querySelectorAll(
           'main h1, main h2, article h1, article h2, .content h1, .content h2',
         );
-        console.log('[Gemini Parser] Found content titles:', contentTitles.length);
         for (const el of contentTitles) {
           const text = el.innerText.trim();
           if (
