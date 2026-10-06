@@ -58,7 +58,6 @@ export class GeminiParser extends ChatParser {
 
       // Strategy 3: Top Bar or Sidebar (original logic)
       if (!title) {
-        console.log('[Gemini Parser] Strategy 3: Looking for title in top bar/sidebar...');
         const possibleHeaders = document.querySelectorAll(
           'h1, button[aria-haspopup="true"], button[aria-expanded]',
         );
