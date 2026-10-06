@@ -101,8 +101,6 @@ export class GeminiParser extends ChatParser {
         title = 'Gemini Conversation';
       }
 
-      console.log('[Gemini Parser] Final title:', title);
-
       const messages = [];
       const seenTexts = new Set();
 
