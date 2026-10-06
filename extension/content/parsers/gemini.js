@@ -113,9 +113,7 @@ export class GeminiParser extends ChatParser {
       // Try multiple strategies to extract content
 
       // Strategy 1: Original conversation containers
-      console.log('[Gemini Parser] Strategy 1: Looking for conversation containers...');
       const conversationContainers = document.querySelectorAll('.conversation-container');
-      console.log('[Gemini Parser] Found conversation containers:', conversationContainers.length);
       if (conversationContainers.length > 0) {
         console.log('[Gemini Parser] Processing conversation containers...');
         extractionAttempted = true;
