@@ -62,7 +62,6 @@ export class GeminiParser extends ChatParser {
         const possibleHeaders = document.querySelectorAll(
           'h1, button[aria-haspopup="true"], button[aria-expanded]',
         );
-        console.log('[Gemini Parser] Found possible headers:', possibleHeaders.length);
 
         for (const el of possibleHeaders) {
           const text = el.innerText.trim();
