@@ -81,6 +81,26 @@ test('convertToJSON', async (t) => {
 
         global.AIChatExportExcerptUtils.transformExcerptBlocks = originalTransform;
     });
+
+    await t.test("convertToHTML sanitizes link hrefs against XSS", () => {
+        const { convertToHTML } = require("./export-utils.js");
+        const title = "XSS Link Test";
+        const messages = [
+            { source: "user", message: "[Safe link](https://example.com/path?a=1&b=2)" },
+            { source: "user", message: "[Malicious JS](javascript:alert(1))" },
+            { source: "user", message: "[Obfuscated JS]( java\tscript:alert(1) )" },
+            { source: "user", message: "[Attribute Injection](https://example.com\"onclick=\"alert(1))" },
+            { source: "user", message: "[Relative Link](/path/to/page#anchor)" }
+        ];
+
+        const html = convertToHTML(title, messages);
+
+        assert.ok(html.includes('<a href="https://example.com/path?a=1&amp;b=2">Safe link</a>'), "Safe HTTP/HTTPS links should be allowed and escaped");
+        assert.ok(html.includes('<a href="#">Malicious JS</a>'), "javascript: links should be sanitized to #");
+        assert.ok(html.includes('<a href="#">Obfuscated JS</a>'), "Obfuscated javascript: links with control chars should be sanitized to #");
+        assert.ok(html.includes('<a href="https://example.com&quot;onclick=&quot;alert(1">Attribute Injection</a>)'), "Double quotes in href should be escaped");
+        assert.ok(html.includes('<a href="/path/to/page#anchor">Relative Link</a>'), "Relative links should be preserved");
+    });
 });
 
 test('convertToHTML', async (t) => {

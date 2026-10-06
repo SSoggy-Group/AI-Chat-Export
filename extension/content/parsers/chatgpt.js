@@ -7,6 +7,17 @@ import {
   TURN_SELECTOR,
 } from './chatgpt_scroll_collector.js';
 
+const TYPE_MAP = {
+  tex: 'LaTeX',
+  txt: 'Text',
+  md: 'Markdown',
+  pdf: 'PDF',
+  doc: 'Document',
+  docx: 'Document',
+};
+
+const FILE_PATTERN = /[a-zA-Z0-9_-]+\.(?:tex|txt|md|pdf|docx?)\b/gi;
+
 export class ChatGPTParser extends ChatParser {
   isAvailable(url) {
     return url.includes('chatgpt.com');
@@ -97,34 +108,23 @@ export class ChatGPTParser extends ChatParser {
   }
 
   extractAttachments(container) {
-    const attachments = [];
     const rawContent = container.textContent || container.innerText || '';
-    const filePatterns = [
-      /([a-zA-Z0-9_-]+\.tex)/g,
-      /([a-zA-Z0-9_-]+\.txt)/g,
-      /([a-zA-Z0-9_-]+\.md)/g,
-      /([a-zA-Z0-9_-]+\.pdf)/g,
-      /([a-zA-Z0-9_-]+\.doc)/g,
-    ];
-    const foundFiles = new Set();
+    if (!rawContent) return [];
 
-    filePatterns.forEach((pattern) => {
-      const matches = rawContent.match(pattern);
-      if (matches) matches.forEach((match) => foundFiles.add(match));
-    });
+    const matches = rawContent.match(FILE_PATTERN);
+    if (!matches) return [];
 
-    foundFiles.forEach((fileName) => {
-      const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-      const typeMap = {
-        tex: 'LaTeX',
-        txt: 'Text',
-        md: 'Markdown',
-        pdf: 'PDF',
-        doc: 'Document',
-        docx: 'Document',
-      };
-      attachments.push({ name: fileName, type: typeMap[fileExt] || 'File' });
-    });
+    const attachments = [];
+    const seenFiles = new Set();
+
+    for (let i = 0; i < matches.length; i++) {
+      const fileName = matches[i];
+      if (!seenFiles.has(fileName)) {
+        seenFiles.add(fileName);
+        const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        attachments.push({ name: fileName, type: TYPE_MAP[fileExt] || 'File' });
+      }
+    }
 
     return attachments;
   }
@@ -194,13 +194,11 @@ export class ChatGPTParser extends ChatParser {
     if (contentElements.length === 0) return null;
 
     const role = this.getMessageRole(container, roleElement);
-    const noiseSelectors = ['.flex.gap-2', 'button', '.sr-only', '[role="button"]'];
+    const noiseSelector = '.flex.gap-2, button, .sr-only, [role="button"]';
     const contentParts = contentElements
       .map((contentElement) => {
         const clone = contentElement.cloneNode(true);
-        noiseSelectors.forEach((selector) => {
-          clone.querySelectorAll(selector).forEach((node) => node.remove());
-        });
+        clone.querySelectorAll(noiseSelector).forEach((node) => node.remove());
         return this.cleanContent(this.convertContentElement(clone));
       })
       .filter(Boolean);
