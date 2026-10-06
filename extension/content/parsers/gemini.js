@@ -50,7 +50,6 @@ export class GeminiParser extends ChatParser {
             !text.includes('Response:')
           ) {
             title = text;
-            console.log('[Gemini Parser] Title set from Strategy 2:', title);
             break;
           }
         }
