@@ -16,16 +16,14 @@ global.MutationObserver = class {
   observe() {}
 };
 
-// Mock excerpt utils since convertToJSON uses normalizeMessageMarkdown
+// Mock excerpt utils since convertToJSON and convertToHTML use normalizeMessageMarkdown
 global.AIChatExportExcerptUtils = {
   transformExcerptBlocks: (msg, transform) => {
-    // For test simplicity, just pass through the message
-    // If the transformation logic becomes complex, we might want to actually require excerpt-utils.js
     return msg;
   }
 };
 
-const { convertToJSON } = require('./export-utils.js');
+const { convertToJSON, convertToHTML } = require('./export-utils.js');
 
 test('convertToJSON', async (t) => {
     await t.test('returns valid JSON with title, exportedAt, and messages', () => {
@@ -65,11 +63,8 @@ test('convertToJSON', async (t) => {
     });
 
     await t.test('normalizes message markdown correctly', () => {
-        // Here we test integration with normalizeMessageMarkdown, but we mocked transformExcerptBlocks
-        // Let's create a more realistic mock just for this test
         const originalTransform = global.AIChatExportExcerptUtils.transformExcerptBlocks;
 
-        // Mock to pretend it transforms something
         global.AIChatExportExcerptUtils.transformExcerptBlocks = (msg) => {
             return msg + " (normalized)";
         };
@@ -84,7 +79,38 @@ test('convertToJSON', async (t) => {
 
         assert.strictEqual(parsed.messages[0].message, "Raw text (normalized)");
 
-        // Restore original mock
         global.AIChatExportExcerptUtils.transformExcerptBlocks = originalTransform;
+    });
+});
+
+test('convertToHTML', async (t) => {
+    await t.test('generates valid HTML document structure and message markup', () => {
+        const title = "HTML Export Test <&>";
+        const messages = [
+            { source: "user", message: "Hello **world**" },
+            { source: "assistant", message: "Here is answer", thinking: "Deep thinking process" }
+        ];
+
+        const html = convertToHTML(title, messages);
+
+        assert.ok(html.includes("<!DOCTYPE html>"), "Should contain doctype");
+        assert.ok(html.includes("<title>HTML Export Test &lt;&amp;&gt;</title>"), "Should escape title");
+        assert.ok(html.includes('<article class="human" data-role="user">'), "Should contain human article");
+        assert.ok(html.includes('<article class="assistant" data-role="assistant">'), "Should contain assistant article");
+        assert.ok(html.includes('<details class="thinking"><summary>Thinking process</summary><div>Deep thinking process</div></details>'), "Should include thinking block");
+        assert.ok(html.includes('<p>Hello <strong>world</strong></p>'), "Should render markdown");
+        assert.ok(html.endsWith("</body>\n</html>"), "Should properly close html document");
+    });
+
+    await t.test('handles empty messages array', () => {
+        const title = "Empty Chat";
+        const messages = [];
+
+        const html = convertToHTML(title, messages);
+
+        assert.ok(html.includes("<title>Empty Chat</title>"));
+        assert.ok(html.includes("<body>"));
+        assert.ok(html.includes("</body>\n</html>"));
+        assert.ok(!html.includes("<article"), "Should have no article elements");
     });
 });

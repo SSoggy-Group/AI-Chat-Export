@@ -234,14 +234,14 @@ hr { border: none; border-top: 1px solid #30363d; margin: 24px 0; }
 <p class="subtitle">AI Chat Export • ${esc(botName)}</p>
 `
 
-	messages.forEach(({ source, message, thinking }) => {
+	const articlesHtml = messages.map(({ source, message, thinking }) => {
 		const role = getBotName(source)
 		const cls = source === 'user' ? 'human' : 'assistant'
 		const thinkingHtml = thinking ? `<details class="thinking"><summary>Thinking process</summary><div>${esc(thinking).replace(/\n/g, '<br>')}</div></details>` : ''
-		html += `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
-	})
-	html += `</body>\n</html>`
-	return html
+		return `<article class="${cls}" data-role="${source}">\n<div class="role">${esc(role)}</div>\n${thinkingHtml}<div class="content">${markdownToHTML(message)}</div>\n</article>\n`
+	}).join('')
+
+	return html + articlesHtml + '</body>\n</html>'
 }
 
 function convertToJSON(title, messages) {
