@@ -120,8 +120,6 @@ export class GeminiParser extends ChatParser {
         console.log('[Gemini Parser] Processing conversation containers...');
         extractionAttempted = true;
         conversationContainers.forEach((container) => {
-          console.log('[Gemini Parser] Processing conversation container...');
-
           // First, check for user query
           const userQuery = container.querySelector('user-query');
           if (userQuery) {
