@@ -75,7 +75,6 @@ export class GeminiParser extends ChatParser {
             const rect = el.getBoundingClientRect();
             if (rect.top < 100 && rect.left > 50) {
               title = text;
-              console.log('[Gemini Parser] Title set from Strategy 3:', title);
               break;
             }
           }
