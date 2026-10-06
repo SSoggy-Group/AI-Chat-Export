@@ -28,7 +28,6 @@ export class GeminiParser extends ChatParser {
           !text.includes('Settings')
         ) {
           title = text;
-          console.log('[Gemini Parser] Title set from Strategy 1:', title);
         }
       }
 
