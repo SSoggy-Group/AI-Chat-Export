@@ -194,13 +194,11 @@ export class ChatGPTParser extends ChatParser {
     if (contentElements.length === 0) return null;
 
     const role = this.getMessageRole(container, roleElement);
-    const noiseSelectors = ['.flex.gap-2', 'button', '.sr-only', '[role="button"]'];
+    const noiseSelector = '.flex.gap-2, button, .sr-only, [role="button"]';
     const contentParts = contentElements
       .map((contentElement) => {
         const clone = contentElement.cloneNode(true);
-        noiseSelectors.forEach((selector) => {
-          clone.querySelectorAll(selector).forEach((node) => node.remove());
-        });
+        clone.querySelectorAll(noiseSelector).forEach((node) => node.remove());
         return this.cleanContent(this.convertContentElement(clone));
       })
       .filter(Boolean);
