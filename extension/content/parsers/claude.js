@@ -254,7 +254,7 @@ export class ClaudeParser extends ChatParser {
 
         if (role === 'User') {
           const clone = el.cloneNode(true);
-          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
+          for (const node of clone.querySelectorAll('button, .artifact-block-cell')) node.remove();
           content = convertToMarkdown(clone);
         } else if (el.matches('.artifact-block-cell')) {
           const index = artifactMap.get(el);
@@ -282,7 +282,7 @@ export class ClaudeParser extends ChatParser {
           }
         } else {
           const clone = el.cloneNode(true);
-          clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
+          for (const node of clone.querySelectorAll('button, .artifact-block-cell')) node.remove();
           content = convertToMarkdown(clone);
         }
 
