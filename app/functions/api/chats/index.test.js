@@ -87,14 +87,10 @@ describe('onRequestPost', () => {
         });
         mockReturning.mockRejectedValue(new Error('DB Error'));
 
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
         const response = await onRequestPost(context);
         const data = await response.json();
 
         expect(response.status).toBe(500);
         expect(data).toEqual({ msg: 'something went wrong!' });
-
-        consoleSpy.mockRestore();
     });
 });

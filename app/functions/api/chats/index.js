@@ -43,8 +43,7 @@ export async function onRequestPost(context) {
         return Response.json({
             id: newChat.id,
         }, { status: 201 });
-    } catch (error) {
-        console.error("Error creating chat:", error);
+    } catch {
         return Response.json({ msg: "something went wrong!" }, { status: 500 });
     }
 }
