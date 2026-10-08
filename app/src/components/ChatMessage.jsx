@@ -1,12 +1,11 @@
 import { memo } from 'react'
 import PropTypes from 'prop-types';
 import MarkdownRenderer from './MarkdownRenderer';
-import BotAvatar, { getBotType, getBotConfig } from './BotAvatar';
+import BotAvatar, { getBotConfig } from './BotAvatar';
 import ThinkingBlock from './ThinkingBlock';
 
 function ChatMessage({ chat }) {
     const isUser = chat.source === 'user' || chat.source === 'human';
-    const botType = getBotType(chat.source);
     const config = getBotConfig(chat.source);
 
     return (
