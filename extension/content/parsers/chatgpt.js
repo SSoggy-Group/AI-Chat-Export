@@ -375,7 +375,8 @@ export class ChatGPTParser extends ChatParser {
           messages.push({
             role: 'ChatGPT',
             content:
-              '*Note: ChatGPT is using iframe-based content that cannot be accessed by browser extensions. Please try exporting from a standard ChatGPT conversation.*',
+              '*Note: ChatGPT is using iframe-based content that cannot be accessed ' +
+              'by browser extensions. Please try exporting from a standard ChatGPT conversation.*',
           });
         }
 
