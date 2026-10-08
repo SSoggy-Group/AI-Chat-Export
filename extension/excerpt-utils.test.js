@@ -76,11 +76,11 @@ test('splitTextOnExcerpts', async (t) => {
     });
 
     await t.test('windows style line endings', () => {
-        const text = 'Before\r\n\r\nexcerpt_from_previous_claude_message.txt:\r\n\r\n```js\r\nconsole.log();\r\n```\r\nAfter';
+        const text = 'Before\r\n\r\nexcerpt_from_previous_claude_message.txt:\r\n\r\n```js\r\nconst y = 2;\r\n```\r\nAfter';
         const result = splitTextOnExcerpts(text);
         assert.deepStrictEqual(result, [
             { type: 'markdown', content: 'Before\r\n\r\n' },
-            { type: 'excerpt', content: 'console.log();' },
+            { type: 'excerpt', content: 'const y = 2;' },
             { type: 'markdown', content: '\r\nAfter' }
         ]);
     });
