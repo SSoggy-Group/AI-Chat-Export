@@ -155,3 +155,54 @@ test('collectMountedTurnMessages ignores role elements inside turns to avoid dup
   assert.strictEqual(results[0].content, 'Turn Prompt');
   assert.strictEqual(results[1].content, 'Standalone Response');
 });
+
+test('getConversationTurns edge cases and numerical sorting', () => {
+  // Edge case 1: null or undefined doc
+  assert.deepStrictEqual(getConversationTurns(null), []);
+  assert.deepStrictEqual(getConversationTurns(undefined), []);
+
+  // Edge case 2: doc missing querySelectorAll
+  assert.deepStrictEqual(getConversationTurns({}), []);
+  assert.deepStrictEqual(getConversationTurns({ querySelectorAll: null }), []);
+
+  // Edge case 3: querySelectorAll returns empty list
+  const emptyDoc = { querySelectorAll: () => [] };
+  assert.deepStrictEqual(getConversationTurns(emptyDoc), []);
+
+  // Edge case 4: Correct numerical sorting order (e.g., turn 2 vs turn 10)
+  const turn10 = { id: 'turn-10', getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-10' : null };
+  const turn2 = { id: 'turn-2', getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-2' : null };
+  const turn1 = { id: 'turn-1', getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-1' : null };
+
+  const unorderedDoc = {
+    querySelectorAll: (selector) => {
+      if (selector === 'section[data-testid^="conversation-turn-"]') {
+        return [turn10, turn2, turn1];
+      }
+      return [];
+    },
+  };
+
+  const sortedTurns = getConversationTurns(unorderedDoc);
+  assert.strictEqual(sortedTurns.length, 3);
+  assert.strictEqual(sortedTurns[0], turn1);
+  assert.strictEqual(sortedTurns[1], turn2);
+  assert.strictEqual(sortedTurns[2], turn10);
+
+  // Edge case 5: Turns with missing or non-matching data-testid sort to the end (Infinity index)
+  const invalidTurn = { id: 'invalid', getAttribute: () => 'invalid-id' };
+  const docWithInvalid = {
+    querySelectorAll: (selector) => {
+      if (selector === 'section[data-testid^="conversation-turn-"]') {
+        return [invalidTurn, turn2, turn1];
+      }
+      return [];
+    },
+  };
+
+  const sortedWithInvalid = getConversationTurns(docWithInvalid);
+  assert.strictEqual(sortedWithInvalid.length, 3);
+  assert.strictEqual(sortedWithInvalid[0], turn1);
+  assert.strictEqual(sortedWithInvalid[1], turn2);
+  assert.strictEqual(sortedWithInvalid[2], invalidTurn);
+});
