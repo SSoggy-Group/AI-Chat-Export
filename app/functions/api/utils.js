@@ -13,6 +13,10 @@ const ALLOWED_ORIGINS = [
     'http://localhost:4000',
 ];
 
+const ALLOWED_EXTENSION_IDS = [
+    // Add specific extension IDs here if required, e.g. 'chrome-extension://<extension-id>'
+];
+
 export function getCorsHeaders(origin) {
     const headers = {
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -21,7 +25,7 @@ export function getCorsHeaders(origin) {
         'Vary': 'Origin',
     };
 
-    if (ALLOWED_ORIGINS.includes(origin) || origin?.startsWith('chrome-extension://') || origin?.startsWith('moz-extension://')) {
+    if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_EXTENSION_IDS.includes(origin)) {
         headers['Access-Control-Allow-Origin'] = origin;
     }
 
