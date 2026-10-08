@@ -234,9 +234,7 @@ export function convertToMarkdown(htmlContent, options = {}) {
       '[aria-hidden="true"]:not(.qwen-markdown-code *)',
     ];
 
-    noiseSelectors.forEach((selector) => {
-      clone.querySelectorAll(selector).forEach((el) => el.remove());
-    });
+    clone.querySelectorAll(noiseSelectors.join(',')).forEach((el) => el.remove());
 
     html = clone.innerHTML;
   } else {
