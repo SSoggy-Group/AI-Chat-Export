@@ -11,7 +11,10 @@ function ThinkingBlock({ content }) {
         <div className="my-3 rounded-lg border border-dashed border-gray-600/40 overflow-hidden transition-all duration-300">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-gray-400 hover:text-gray-300 hover:bg-gray-800/30 transition-colors"
+                className={
+                    'w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium ' +
+                    'text-gray-400 hover:text-gray-300 hover:bg-gray-800/30 transition-colors'
+                }
             >
                 <svg
                     className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
