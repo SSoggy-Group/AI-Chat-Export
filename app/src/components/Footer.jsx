@@ -1,4 +1,4 @@
-import { Flame, Chrome, Github } from 'lucide-react';
+import { Github } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 function Footer() {

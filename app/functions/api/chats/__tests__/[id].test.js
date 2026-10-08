@@ -48,7 +48,7 @@ describe('chats/[id].js onRequestGet', () => {
 
         const response = await onRequestGet(mockContext);
 
-        expect(global.Response.json).toHaveBeenCalledWith(
+        expect(Response.json).toHaveBeenCalledWith(
             mockChat,
             expect.objectContaining({
                 headers: expect.any(Object)
@@ -62,7 +62,7 @@ describe('chats/[id].js onRequestGet', () => {
 
         const response = await onRequestGet(mockContext);
 
-        expect(global.Response.json).toHaveBeenCalledWith(
+        expect(Response.json).toHaveBeenCalledWith(
             { msg: 'chat not found' },
             expect.objectContaining({
                 status: 404,
@@ -78,7 +78,7 @@ describe('chats/[id].js onRequestGet', () => {
 
         const response = await onRequestGet(mockContext);
 
-        expect(global.Response.json).toHaveBeenCalledWith(
+        expect(Response.json).toHaveBeenCalledWith(
             { msg: 'Something went wrong!' },
             expect.objectContaining({
                 status: 500,
