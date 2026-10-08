@@ -107,10 +107,8 @@ export function convertToMarkdown(htmlContent, options = {}) {
 
       let markdown = '\n';
       rows.forEach((row, rowIndex) => {
-        const cells = Array.from(row.querySelectorAll('th, td'));
-
         // Convert each cell's HTML to markdown using the isolated service
-        const cellContents = cells.map((cell) => {
+        const cellContents = Array.from(row.querySelectorAll('th, td'), (cell) => {
           let cellMarkdown = cellTurndown.turndown(cell);
           // Replace any actual newlines that Turndown generated (e.g. from P tags) with <br>
           // as tables cannot have literal newlines in GFM.
@@ -122,7 +120,7 @@ export function convertToMarkdown(htmlContent, options = {}) {
 
         // Add separator after header row
         if (rowIndex === 0) {
-          markdown += '| ' + cells.map(() => '---').join(' | ') + ' |\n';
+          markdown += '| ' + cellContents.map(() => '---').join(' | ') + ' |\n';
         }
       });
 
