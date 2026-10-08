@@ -34,7 +34,7 @@ function publicMessage(message) {
  */
 export function getConversationTurnIndex(turn) {
   if (!turn) return Number.POSITIVE_INFINITY;
-  const testId = turn.getAttribute?.('data-testid') || '';
+  const testId = typeof turn.getAttribute === 'function' ? turn.getAttribute('data-testid') || '' : '';
   const match = testId.match(/^conversation-turn-(\d+)$/);
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }
@@ -44,7 +44,7 @@ export function getConversationTurnIndex(turn) {
  * @param {Document|null} [doc=document] - Document to query.
  * @returns {Element[]} Sorted turns, or an empty array if querying is unavailable.
  */
-export function getConversationTurns(doc = document) {
+export function getConversationTurns(doc = typeof document !== 'undefined' ? document : null) {
   if (!doc || !doc.querySelectorAll) return [];
   return Array.from(doc.querySelectorAll(TURN_SELECTOR)).sort((a, b) => {
     return getConversationTurnIndex(a) - getConversationTurnIndex(b);
@@ -57,7 +57,7 @@ export function getConversationTurns(doc = document) {
  * @param {Document|null} [doc=document] - Document containing the conversation.
  * @returns {Element|null} Scroll container, or null when no document is supplied.
  */
-export function findChatGPTScrollRoot(turns = [], doc = document) {
+export function findChatGPTScrollRoot(turns = [], doc = typeof document !== 'undefined' ? document : null) {
   if (!doc) return null;
 
   // 1. ChatGPT modern explicit data-scroll-root
