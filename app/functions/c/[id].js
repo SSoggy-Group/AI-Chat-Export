@@ -1,3 +1,4 @@
+/* global HTMLRewriter */
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import { chatsSchema } from '../../database/schema';
@@ -101,12 +102,19 @@ export async function onRequestGet(context) {
             // When a human visits, React will instantly overwrite this div with the UI.
             .on('div#root', {
                 element(element) {
-                    element.setInnerContent(`<main style="padding: 2rem; font-family: sans-serif; white-space: pre-wrap;"><h1>${safeTitle}</h1>\n\n${safeMarkdown}</main>`, { html: true });
+                    element.setInnerContent(
+                        `<main style="padding: 2rem; font-family: sans-serif; white-space: pre-wrap;">
+<h1>${safeTitle}</h1>
+
+${safeMarkdown}
+</main>`,
+                        { html: true }
+                    );
                 }
             });
 
         return rewriter.transform(assetResponse);
-    } catch (error) {
+    } catch {
         // Fallback to static asset if there's a DB error so it doesn't hard-crash the frontend load
         return context.env.ASSETS.fetch(request);
     }
