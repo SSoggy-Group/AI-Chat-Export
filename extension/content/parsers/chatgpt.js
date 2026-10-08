@@ -266,8 +266,6 @@ export class ChatGPTParser extends ChatParser {
     if (messages.length === 0) {
       const iframes = document.querySelectorAll('iframe[src*="oaiusercontent.com"]');
       if (iframes.length > 0) {
-        console.log('Detected iframe-based content, attempting extraction...');
-
         // Try multiple strategies to extract content
         let extractedContent = '';
 
@@ -276,8 +274,8 @@ export class ChatGPTParser extends ChatParser {
           if (window.conversationData || window.chatData) {
             extractedContent = JSON.stringify(window.conversationData || window.chatData);
           }
-        } catch (e) {
-          console.log('Global data access failed:', e);
+        } catch {
+          // Global data access unavailable
         }
 
         // Strategy 2: Look for preloaded content in hidden elements
