@@ -34,7 +34,7 @@ function publicMessage(message) {
  */
 export function getConversationTurnIndex(turn) {
   if (!turn) return Number.POSITIVE_INFINITY;
-  const testId = turn.getAttribute?.('data-testid') || '';
+  const testId = typeof turn.getAttribute === 'function' ? turn.getAttribute('data-testid') || '' : '';
   const match = testId.match(/^conversation-turn-(\d+)$/);
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }

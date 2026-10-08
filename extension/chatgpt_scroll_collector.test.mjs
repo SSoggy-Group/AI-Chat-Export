@@ -7,23 +7,82 @@ import {
   collectMountedTurnMessages,
 } from './content/parsers/chatgpt_scroll_collector.js';
 
-test('getConversationTurnIndex', () => {
-  assert.strictEqual(
-    getConversationTurnIndex({ getAttribute: () => 'conversation-turn-1' }),
-    1
-  );
-  assert.strictEqual(
-    getConversationTurnIndex({ getAttribute: () => 'conversation-turn-42' }),
-    42
-  );
-  assert.strictEqual(
-    getConversationTurnIndex({ getAttribute: () => 'something-else' }),
-    Number.POSITIVE_INFINITY
-  );
-  assert.strictEqual(
-    getConversationTurnIndex(null),
-    Number.POSITIVE_INFINITY
-  );
+test('getConversationTurnIndex', async (t) => {
+  await t.test('returns numeric index for valid conversation-turn data-testid formats', () => {
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-0' : null }),
+      0
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-1' : null }),
+      1
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-42' : null }),
+      42
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-999' : null }),
+      999
+    );
+  });
+
+  await t.test('returns POSITIVE_INFINITY for invalid or non-matching data-testid formats', () => {
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'something-else' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn-' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn-abc' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn-1-extra' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'prefix-conversation-turn-1' }),
+      Number.POSITIVE_INFINITY
+    );
+  });
+
+  await t.test('returns POSITIVE_INFINITY when data-testid attribute is missing or empty', () => {
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => null }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => undefined }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => '' }),
+      Number.POSITIVE_INFINITY
+    );
+  });
+
+  await t.test('returns POSITIVE_INFINITY when turn element is null, undefined, or missing getAttribute', () => {
+    assert.strictEqual(getConversationTurnIndex(null), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(undefined), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex({}), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex({ getAttribute: 'not-a-function' }), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(123), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex('element-string'), Number.POSITIVE_INFINITY);
+  });
+
+  await t.test('works with mock or standard DOM element objects', () => {
+    const mockElement = {
+      getAttribute(attr) {
+        if (attr === 'data-testid') return 'conversation-turn-15';
+        return null;
+      },
+    };
+    assert.strictEqual(getConversationTurnIndex(mockElement), 15);
+  });
 });
 
 test('findChatGPTScrollRoot', () => {
