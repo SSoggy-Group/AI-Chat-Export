@@ -264,6 +264,28 @@ test('ClaudeParser.parse', async (t) => {
     assert.equal(result.messages[0].content, 'Hello');
   });
 
+  await t.test('falls back to parseFromDOM when API returns empty messages', async () => {
+    global.fetch = async (url) => {
+      if (url.endsWith('/api/organizations')) {
+        return {
+          ok: true,
+          json: async () => [{ uuid: 'org-123', capabilities: ['chat'] }],
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          name: 'API Chat',
+          chat_messages: [],
+        }),
+      };
+    };
+
+    const result = await parser.parse();
+    assert.equal(result.title, 'Claude Test Chat');
+    assert.deepEqual(result.messages, []);
+  });
+
   await t.test('falls back to parseFromDOM when API returns null', async () => {
     global.fetch = async () => ({ ok: false, status: 500 });
 
