@@ -266,8 +266,6 @@ export class ChatGPTParser extends ChatParser {
     if (messages.length === 0) {
       const iframes = document.querySelectorAll('iframe[src*="oaiusercontent.com"]');
       if (iframes.length > 0) {
-        console.log('Detected iframe-based content, attempting extraction...');
-
         // Try multiple strategies to extract content
         let extractedContent = '';
 
