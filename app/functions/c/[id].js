@@ -6,6 +6,16 @@ import { chatsSchema } from '../../database/schema';
 // List of known AI Live-Fetching Bots (User-Requested Bots)
 const AI_BOT_REGEX = /bot|spider|crawl|chatgpt|perplexity|claude|meta|anthropic|omgili|facebook|twitter|slack|discord/i;
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export async function onRequestGet(context) {
     const request = context.request;
     const id = context.params.id;
@@ -32,15 +42,17 @@ export async function onRequestGet(context) {
 
         // OPTION 1: If it's an AI bot, serve the raw markdown wrapped in simple HTML
         if (isAIBot) {
+            const escapedTitle = escapeHtml(chat.title);
+            const escapedMarkdown = escapeHtml(markdown);
             const botHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>${chat.title} - AI-Chat-Export</title>
+    <title>${escapedTitle} - AI-Chat-Export</title>
 </head>
 <body>
     <main>
-        <pre style="white-space: pre-wrap; font-family: monospace;">${markdown.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+        <pre style="white-space: pre-wrap; font-family: monospace;">${escapedMarkdown}</pre>
     </main>
 </body>
 </html>`;
@@ -61,8 +73,8 @@ export async function onRequestGet(context) {
             return assetResponse;
         }
 
-        const safeTitle = chat.title.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const safeMarkdown = markdown.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeTitle = escapeHtml(chat.title);
+        const safeMarkdown = escapeHtml(markdown);
 
         // Define HTML rewrites
         const rewriter = new HTMLRewriter()

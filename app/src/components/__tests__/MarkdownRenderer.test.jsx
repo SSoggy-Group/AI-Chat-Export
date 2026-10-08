@@ -42,6 +42,14 @@ describe('MarkdownRenderer', () => {
             expect(link.getAttribute('rel')).toBe('noopener noreferrer');
         });
 
+        it('sanitizes javascript: links to prevent XSS', () => {
+            const content = '[Malicious Link](javascript:alert(1))';
+            render(<MarkdownRenderer content={content} />);
+
+            const link = screen.getByRole('link', { name: 'Malicious Link' });
+            expect(link.getAttribute('href')).toBe('#');
+        });
+
         it('renders tables with proper GFM structure and styling', () => {
             const content = `
 | Header 1 | Header 2 |

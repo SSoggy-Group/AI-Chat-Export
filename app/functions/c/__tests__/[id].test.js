@@ -91,6 +91,28 @@ describe('c/[id].js onRequestGet', () => {
         expect(text).toContain('Hi there!');
     });
 
+    it('escapes special HTML characters in title and content for AI bot user agents', async () => {
+        mockContext.request = {
+            headers: new Headers([['User-Agent', 'Mozilla/5.0 (compatible; ClaudeBot/1.0)']])
+        };
+
+        const mockChat = {
+            id: 'xss-chat',
+            title: 'Test <script>alert(1)</script> & "Quotes" \'Single\'',
+            content: [
+                { source: 'user', message: 'Hello <img src=x onerror=alert(1)> & "more"' }
+            ]
+        };
+        mockDb.limit.mockResolvedValue([mockChat]);
+
+        const response = await onRequestGet(mockContext);
+        const text = await response.text();
+
+        expect(text).toContain('<title>Test &lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;Quotes&quot; &#39;Single&#39; - AI-Chat-Export</title>');
+        expect(text).not.toContain('<script>alert(1)</script>');
+        expect(text).toContain('&lt;img src=x onerror=alert(1)&gt; &amp; &quot;more&quot;');
+    });
+
     it('injects SEO tags and fallback content in div#root for standard browser requests', async () => {
         const mockChat = {
             id: 'test-chat-id',
