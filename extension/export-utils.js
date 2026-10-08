@@ -7,10 +7,14 @@ const SITE_CONFIG = {
 	'chat.qwenlm.ai': { name: 'Qwen', source: 'qwen', type: 'dom' },
 }
 
+const BOT_NAME_MAP = Object.values(SITE_CONFIG).reduce((map, config) => {
+	map[config.source] = config.name
+	return map
+}, {})
+
 function getBotName(source) {
 	if (!source || source === 'user' || source === 'human') return 'You'
-	const entry = Object.values(SITE_CONFIG).find(c => c.source === source)
-	return entry ? entry.name : 'Assistant'
+	return BOT_NAME_MAP[source] || 'Assistant'
 }
 // --- export conversion functions ---
 const transformExcerptBlocks = (message, transformExcerpt) =>
@@ -471,6 +475,7 @@ function downloadFile(content, filename, mimeType) {
 
 if (typeof module !== 'undefined' && module.exports) {
 	module.exports = {
+		getBotName,
 		convertToJSON,
 		convertToMarkdown,
 		convertToText,

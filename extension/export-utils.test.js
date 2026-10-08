@@ -23,7 +23,7 @@ global.AIChatExportExcerptUtils = {
   }
 };
 
-const { convertToJSON, convertToHTML } = require('./export-utils.js');
+const { getBotName, convertToJSON, convertToHTML } = require('./export-utils.js');
 
 test('convertToJSON', async (t) => {
     await t.test('returns valid JSON with title, exportedAt, and messages', () => {
@@ -132,5 +132,33 @@ test('convertToHTML', async (t) => {
         assert.ok(html.includes("<body>"));
         assert.ok(html.includes("</body>\n</html>"));
         assert.ok(!html.includes("<article"), "Should have no article elements");
+    });
+});
+
+test('getBotName', async (t) => {
+    await t.test('returns expected bot name or fallback', () => {
+        assert.strictEqual(getBotName('user'), 'You');
+        assert.strictEqual(getBotName('human'), 'You');
+        assert.strictEqual(getBotName(null), 'You');
+        assert.strictEqual(getBotName(undefined), 'You');
+        assert.strictEqual(getBotName(''), 'You');
+        assert.strictEqual(getBotName('claude'), 'Claude');
+        assert.strictEqual(getBotName('chatgpt'), 'ChatGPT');
+        assert.strictEqual(getBotName('deepseek'), 'DeepSeek');
+        assert.strictEqual(getBotName('mistral'), 'Mistral');
+        assert.strictEqual(getBotName('gemini'), 'Gemini');
+        assert.strictEqual(getBotName('qwen'), 'Qwen');
+        assert.strictEqual(getBotName('unknown_source'), 'Assistant');
+    });
+
+    await t.test('performance benchmark for getBotName', () => {
+        const sources = ['claude', 'chatgpt', 'deepseek', 'mistral', 'gemini', 'qwen', 'user', 'human', 'unknown'];
+        const iterations = 1000000;
+        const start = performance.now();
+        for (let i = 0; i < iterations; i++) {
+            getBotName(sources[i % sources.length]);
+        }
+        const duration = performance.now() - start;
+        console.log(`[Benchmark] getBotName ${iterations} iterations took ${duration.toFixed(2)} ms`);
     });
 });
