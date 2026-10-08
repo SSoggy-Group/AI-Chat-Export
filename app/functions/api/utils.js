@@ -21,7 +21,7 @@ export function getCorsHeaders(origin) {
         'Vary': 'Origin',
     };
 
-    if (ALLOWED_ORIGINS.includes(origin) || origin?.startsWith('chrome-extension://') || origin?.startsWith('moz-extension://')) {
+    if (ALLOWED_ORIGINS.includes(origin)) {
         headers['Access-Control-Allow-Origin'] = origin;
     }
 
