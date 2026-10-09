@@ -81,7 +81,7 @@ export async function onRequestGet(context) {
             // 1. Rewrite <title>
             .on('title', {
                 element(element) {
-                    element.setInnerContent(`${safeTitle} - AI-Chat-Export`);
+                    element.setInnerContent(`${chat.title} - AI-Chat-Export`);
                 }
             })
             // 2. Rewrite meta descriptions
