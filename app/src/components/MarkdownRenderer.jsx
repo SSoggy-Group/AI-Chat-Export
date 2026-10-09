@@ -10,7 +10,8 @@ const splitOnExcerpts = (text) => globalThis.AIChatExportExcerptUtils.splitTextO
 
 mermaid.initialize({
     startOnLoad: true,
-    theme: 'dark'
+    theme: 'dark',
+    securityLevel: 'strict'
 })
 
 const MarkdownRenderer = ({ content, isHuman }) => {
@@ -47,9 +48,12 @@ const MarkdownRenderer = ({ content, isHuman }) => {
         pre: ({ children }) => (
             <div className="overflow-hidden rounded-lg">{children}</div>
         ),
-        a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
-        ),
+        a: ({ children, href }) => {
+            const isSafe = href && /^(https?:|\/|#|mailto:)/i.test(href.trim());
+            return (
+                <a href={isSafe ? href : '#'} target="_blank" rel="noopener noreferrer">{children}</a>
+            );
+        },
         table: ({ children }) => (
             <div className="my-4 overflow-x-auto border border-gray-700 rounded-lg">
                 <table className="min-w-full border-collapse">{children}</table>
