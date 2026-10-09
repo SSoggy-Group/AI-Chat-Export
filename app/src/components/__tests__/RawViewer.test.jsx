@@ -41,6 +41,21 @@ describe('formatChatAsText', () => {
         const expected = `# Missing Messages\n\n## You\n\n\n\n---\n\n## Claude\n\n\n\n---\n`;
         expect(formatChatAsText(chatData)).toBe(expected);
     });
+
+    it('formats messages with thinking blocks correctly', () => {
+        const chatData = {
+            title: 'Thinking Chat',
+            content: [
+                {
+                    source: 'claude',
+                    message: 'Final answer',
+                    thinking: 'Line 1 of thought\nLine 2 of thought'
+                }
+            ]
+        };
+        const expected = `# Thinking Chat\n\n## Claude\n\n> **Thinking:**\n> Line 1 of thought\n> Line 2 of thought\n\nFinal answer\n\n---\n`;
+        expect(formatChatAsText(chatData)).toBe(expected);
+    });
 });
 
 describe('RawViewer component', () => {
