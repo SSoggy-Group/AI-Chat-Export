@@ -126,6 +126,13 @@ describe('c/[id].js onRequestGet', () => {
 
         await onRequestGet(mockContext);
 
+        expect(mockHandlers['title']).toBeDefined();
+        const mockTitleElement = {
+            setInnerContent: vi.fn()
+        };
+        mockHandlers['title'].element(mockTitleElement);
+        expect(mockTitleElement.setInnerContent).toHaveBeenCalledWith('Test <Chat> - AI-Chat-Export');
+
         expect(mockHandlers['div#root']).toBeDefined();
 
         const mockElement = {
