@@ -63,7 +63,7 @@ function Home() {
                                 Chrome
                             </a>
                             <a
-                                href="https://addons.mozilla.org/firefox/addon/ai-chat-export/"
+                                href="https://addons.mozilla.org/en-US/firefox/addon/ai-chat-export-share/"
                                 target="_blank"
                                 className="inline-flex items-center px-6 py-3 text-lg font-semibold text-white rounded-lg bg-aiChatExport-accent hover:bg-aiChatExport-accent/80"
                             >
