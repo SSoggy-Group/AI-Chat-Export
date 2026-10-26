@@ -55,7 +55,7 @@ function Home() {
                     <div className="flex flex-col items-center gap-4">
                         <div className="flex flex-col gap-4 sm:flex-row">
                             <a
-                                href="https://chromewebstore.google.com/detail/pcpjdbnjhgofgjgegodlnebdnmiddmaa"
+                                href="https://chromewebstore.google.com/detail/amkmlcpfldhnbedjfgcckbgcbibpdojh"
                                 target="_blank"
                                 className="inline-flex items-center px-6 py-3 text-lg font-semibold text-white rounded-lg bg-aiChatExport-accent hover:bg-aiChatExport-accent/80"
                             >
