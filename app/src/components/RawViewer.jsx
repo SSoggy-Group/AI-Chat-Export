@@ -31,7 +31,9 @@ function RawViewer() {
                     try {
                         const errData = await res.json();
                         msg = errData.msg || msg;
-                    } catch { /* non-JSON error body */ }
+                    } catch (parseError) {
+                        console.warn('Failed to parse error response JSON:', parseError);
+                    }
                     throw new Error(msg);
                 }
                 const data = await res.json();
