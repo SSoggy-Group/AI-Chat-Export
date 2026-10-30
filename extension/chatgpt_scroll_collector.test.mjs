@@ -10,20 +10,24 @@ import {
 test('getConversationTurnIndex', async (t) => {
   await t.test('returns numeric index for valid conversation-turn data-testid formats', () => {
     assert.strictEqual(
-      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-0' : null }),
+      getConversationTurnIndex({ getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-0' : null) }),
       0
     );
     assert.strictEqual(
-      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-1' : null }),
+      getConversationTurnIndex({ getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-1' : null) }),
       1
     );
     assert.strictEqual(
-      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-42' : null }),
+      getConversationTurnIndex({ getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-42' : null) }),
       42
     );
     assert.strictEqual(
-      getConversationTurnIndex({ getAttribute: (attr) => attr === 'data-testid' ? 'conversation-turn-999' : null }),
+      getConversationTurnIndex({ getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-999' : null) }),
       999
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: (attr) => (attr === 'data-testid' ? 'conversation-turn-007' : null) }),
+      7
     );
   });
 
@@ -48,9 +52,29 @@ test('getConversationTurnIndex', async (t) => {
       getConversationTurnIndex({ getAttribute: () => 'prefix-conversation-turn-1' }),
       Number.POSITIVE_INFINITY
     );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'CONVERSATION-TURN-1' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn-1 ' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => ' conversation-turn-1' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn--1' }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 'conversation-turn-1.5' }),
+      Number.POSITIVE_INFINITY
+    );
   });
 
-  await t.test('returns POSITIVE_INFINITY when data-testid attribute is missing or empty', () => {
+  await t.test('returns POSITIVE_INFINITY when data-testid attribute is missing, empty, or non-string', () => {
     assert.strictEqual(
       getConversationTurnIndex({ getAttribute: () => null }),
       Number.POSITIVE_INFINITY
@@ -63,13 +87,27 @@ test('getConversationTurnIndex', async (t) => {
       getConversationTurnIndex({ getAttribute: () => '' }),
       Number.POSITIVE_INFINITY
     );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => 123 }),
+      Number.POSITIVE_INFINITY
+    );
+    assert.strictEqual(
+      getConversationTurnIndex({ getAttribute: () => ({}) }),
+      Number.POSITIVE_INFINITY
+    );
   });
 
-  await t.test('returns POSITIVE_INFINITY when turn element is null, undefined, or missing getAttribute', () => {
+  await t.test('returns POSITIVE_INFINITY when turn element is null, undefined, missing getAttribute, or falsy primitive', () => {
     assert.strictEqual(getConversationTurnIndex(null), Number.POSITIVE_INFINITY);
     assert.strictEqual(getConversationTurnIndex(undefined), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(0), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(false), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(''), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex(NaN), Number.POSITIVE_INFINITY);
     assert.strictEqual(getConversationTurnIndex({}), Number.POSITIVE_INFINITY);
     assert.strictEqual(getConversationTurnIndex({ getAttribute: 'not-a-function' }), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex({ getAttribute: true }), Number.POSITIVE_INFINITY);
+    assert.strictEqual(getConversationTurnIndex({ getAttribute: null }), Number.POSITIVE_INFINITY);
     assert.strictEqual(getConversationTurnIndex(123), Number.POSITIVE_INFINITY);
     assert.strictEqual(getConversationTurnIndex('element-string'), Number.POSITIVE_INFINITY);
   });
