@@ -1,3 +1,5 @@
+const NOT_IMPLEMENTED_ERROR = new Error('Not implemented');
+
 export class ExportFormatter {
   constructor() {}
 
@@ -7,14 +9,14 @@ export class ExportFormatter {
    * @returns {string} The formatted content
    */
   format(_conversation) {
-    throw new Error('Not implemented');
+    throw NOT_IMPLEMENTED_ERROR;
   }
 
   getFileExtension() {
-    throw new Error('Not implemented');
+    throw NOT_IMPLEMENTED_ERROR;
   }
 
   getMimeType() {
-    throw new Error('Not implemented');
+    throw NOT_IMPLEMENTED_ERROR;
   }
 }
