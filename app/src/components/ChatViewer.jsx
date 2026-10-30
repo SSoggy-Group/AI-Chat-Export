@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import ChatMessage from './ChatMessage';
 import BotAvatar, { getBotType, getBotConfig } from './BotAvatar';
 import { useParams } from 'react-router-dom';
-
-const PROD_API_ORIGIN = 'https://ai.ssoggy.me';
+import { PROD_API_ORIGIN } from '../config';
 
 const BOT_URLS = {
     claude: 'https://claude.ai',
