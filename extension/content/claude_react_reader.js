@@ -35,11 +35,6 @@
                 artifactInfo = candidate.properties;
               }
             }
-
-            // Fallback: Dump text content if React lookup fails, but mark as raw
-            if (!artifactInfo) {
-              // artifactInfo = { fallback: true, text: artifactElement.innerText };
-            }
           }
         } catch (e) {
           console.error('[AI Export] Error reading React internals:', e);
