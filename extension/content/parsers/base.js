@@ -1,3 +1,7 @@
+function throwNotImplemented() {
+  throw new Error('Not implemented');
+}
+
 export class ChatParser {
   constructor() {}
 
@@ -7,7 +11,7 @@ export class ChatParser {
    * @returns {boolean}
    */
   isAvailable(_url) {
-    throw new Error('Not implemented');
+    throwNotImplemented();
   }
 
   /**
@@ -15,6 +19,6 @@ export class ChatParser {
    * @returns {Promise<{ title: string, messages: Array<{role: string, content: string}>, metadata?: Record<string, string> }>}
    */
   async parse() {
-    throw new Error('Not implemented');
+    throwNotImplemented();
   }
 }
