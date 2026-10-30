@@ -1,3 +1,5 @@
+const NOT_IMPLEMENTED_ERROR = new Error('Not implemented');
+
 export class ChatParser {
   constructor() {}
 
@@ -7,7 +9,7 @@ export class ChatParser {
    * @returns {boolean}
    */
   isAvailable(_url) {
-    throw new Error('Not implemented');
+    throw NOT_IMPLEMENTED_ERROR;
   }
 
   /**
@@ -15,6 +17,6 @@ export class ChatParser {
    * @returns {Promise<{ title: string, messages: Array<{role: string, content: string}>, metadata?: Record<string, string> }>}
    */
   async parse() {
-    throw new Error('Not implemented');
+    throw NOT_IMPLEMENTED_ERROR;
   }
 }
