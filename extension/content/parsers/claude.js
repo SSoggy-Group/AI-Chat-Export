@@ -4,6 +4,21 @@ import { convertToMarkdown } from '../utils/html-to-markdown.js';
 const CLAUDE_API_URL = 'https://claude.ai/api/organizations';
 
 /**
+ * Checks if an element is contained within any element present in the given Set.
+ * @param {Element} el - The candidate DOM element.
+ * @param {Set<Element>} set - Set of elements to check containment against.
+ * @returns {boolean} True if an ancestor of `el` is in `set`.
+ */
+function isContainedInSet(el, set) {
+  let curr = el.parentElement;
+  while (curr) {
+    if (set.has(curr)) return true;
+    curr = curr.parentElement;
+  }
+  return false;
+}
+
+/**
  * Formats extracted attachment text and file names as Markdown without reading blob contents.
  * @param {Object} [options={}] - Attachment data from a user message.
  * @param {Array<{file_type?: string, file_name?: string, extracted_content?: string}>} [options.attachments] - Extracted attachments.
@@ -210,14 +225,15 @@ export class ClaudeParser extends ChatParser {
     /** Converts mounted candidates and refreshes previously collected entries. */
     const scan = async () => {
       const rawStrict = Array.from(document.querySelectorAll(strictSelectors));
+      const strictSet = new Set(rawStrict);
       const strictCandidates = rawStrict.filter(
-        (el) => el.matches('.artifact-block-cell') ||
-          !rawStrict.some((other) => other !== el && other.contains(el)),
+        (el) => el.matches('.artifact-block-cell') || !isContainedInSet(el, strictSet),
       );
 
       const rawFallback = Array.from(document.querySelectorAll(fallbackSelectors));
+      const fallbackSet = new Set(rawFallback);
       const fallbackCandidates = rawFallback.filter(
-        (el) => !rawFallback.some((other) => other !== el && other.contains(el)),
+        (el) => !isContainedInSet(el, fallbackSet),
       );
 
       const validFallbacks = fallbackCandidates.filter((fallback) => {
