@@ -25,10 +25,34 @@ export class DeepSeekParser extends ChatParser {
         ),
       );
       // Prefer complete message roots over matching toolbar/content descendants.
-      const messageRoots = rawContainers.filter((el) => el.matches('.ds-message'));
-      const candidates = rawContainers.filter((el) =>
-        el.matches('.ds-message') || !messageRoots.some((root) => root.contains(el)),
-      );
+      const messageRootsSet = new Set();
+      for (let i = 0; i < rawContainers.length; i++) {
+        const el = rawContainers[i];
+        if (el.matches('.ds-message')) {
+          messageRootsSet.add(el);
+        }
+      }
+
+      const candidates = [];
+      for (let i = 0; i < rawContainers.length; i++) {
+        const el = rawContainers[i];
+        if (messageRootsSet.has(el)) {
+          candidates.push(el);
+        } else {
+          let isInsideRoot = false;
+          let curr = el.parentElement;
+          while (curr) {
+            if (messageRootsSet.has(curr)) {
+              isInsideRoot = true;
+              break;
+            }
+            curr = curr.parentElement;
+          }
+          if (!isInsideRoot) {
+            candidates.push(el);
+          }
+        }
+      }
       const messageContainers = candidates.filter(
         (el) => !candidates.some((other) => other !== el && el.contains(other)),
       );
