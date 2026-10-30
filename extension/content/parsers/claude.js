@@ -236,11 +236,26 @@ export class ClaudeParser extends ChatParser {
       const artifactMap = new Map();
       artifactElements.forEach((el, index) => artifactMap.set(el, index));
 
+      const userMessageCache = new WeakMap();
+      const virtuosoItemCache = new WeakMap();
       const itemCandidateCounts = new Map();
+
       for (const el of allElements) {
-        const role = el.matches('.artifact-block-cell') ? 'Claude Artifact'
-          : el.closest('[data-testid="user-message"]') ? 'User' : 'Claude';
-        const virtuosoItem = el.closest('[data-item-index], [data-index]');
+        const isArtifact = artifactMap.has(el);
+        let userMsgNode = userMessageCache.get(el);
+        if (userMsgNode === undefined) {
+          userMsgNode = el.closest('[data-testid="user-message"]');
+          userMessageCache.set(el, userMsgNode);
+        }
+
+        const role = isArtifact ? 'Claude Artifact' : userMsgNode ? 'User' : 'Claude';
+
+        let virtuosoItem = virtuosoItemCache.get(el);
+        if (virtuosoItem === undefined) {
+          virtuosoItem = el.closest('[data-item-index], [data-index]');
+          virtuosoItemCache.set(el, virtuosoItem);
+        }
+
         const itemIdx = virtuosoItem?.getAttribute('data-item-index') ?? virtuosoItem?.getAttribute('data-index');
         let key = el;
         if (itemIdx !== undefined && itemIdx !== null) {
@@ -256,7 +271,7 @@ export class ClaudeParser extends ChatParser {
           const clone = el.cloneNode(true);
           clone.querySelectorAll('button, .artifact-block-cell').forEach((node) => node.remove());
           content = convertToMarkdown(clone);
-        } else if (el.matches('.artifact-block-cell')) {
+        } else if (role === 'Claude Artifact') {
           const index = artifactMap.get(el);
           if (index !== undefined) {
             const info = await getArtifactInfo(index);
