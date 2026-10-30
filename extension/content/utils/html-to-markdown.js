@@ -226,11 +226,9 @@ export function convertToMarkdown(htmlContent, options = {}) {
     // Note: Exclude elements inside qwen-markdown-code to preserve Monaco editor content
     const noiseSelectors = [
       'button:not(.qwen-markdown-code *)',
-      '.copy-button',
       '[role="button"]:not(.qwen-markdown-code *)',
-      '.sr-only',
+      '.sr-only:not(.qwen-markdown-code *)',
       'svg:not(.qwen-markdown-code *)',
-      '.icon:not(.qwen-markdown-code *)',
       '[aria-hidden="true"]:not(.qwen-markdown-code *)',
     ];
 
