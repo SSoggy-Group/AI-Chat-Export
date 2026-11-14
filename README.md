@@ -4,7 +4,7 @@ Browser extension to share and export your AI chats from Claude, ChatGPT, DeepSe
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/pcpjdbnjhgofgjgegodlnebdnmiddmaa?color=blue&label=Chrome%20Web%20Store&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/amkmlcpfldhnbedjfgcckbgcbibpdojh?utm_source=item-share-cb)
 [![Firefox Add-ons](https://img.shields.io/amo/v/ai-chat-export?color=orange&label=Firefox%20Add-ons&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/ai-chat-export-share/)
-[![GitHub Release](https://img.shields.io/github/v/release/SSoggy-Group/AI-Chat-Export?color=success&logo=github)](https://github.com/SSoggy-Group/AI-Chat-Export/releases/latest)
+[![GitHub Release](https://img.shields.io/github/v/release/SSoggyTacoMan/AI-Chat-Export?color=success&logo=github)](https://github.com/SSoggyTacoMan/AI-Chat-Export/releases/latest)
 [![Website](https://img.shields.io/badge/Website-ai.ssoggy.me-blue?logo=vercel)](https://ai.ssoggy.me)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -46,7 +46,7 @@ For development/debugging:
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/SSoggy-Group/AI-Chat-Export.git
+   git clone https://github.com/SSoggyTacoMan/AI-Chat-Export.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
@@ -60,7 +60,7 @@ For development/debugging:
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/SSoggy-Group/AI-Chat-Export.git
+   git clone https://github.com/SSoggyTacoMan/AI-Chat-Export.git
    ```
 
 2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
@@ -84,11 +84,11 @@ Contributions are welcome! Feel free to:
 ## Star History
 
 <!-- markdownlint-disable MD033 -->
-<a href="https://www.star-history.com/?repos=SSoggy-Group%2FAI-Chat-Export&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=SSoggyTacoMan%2FAI-Chat-Export&type=date&legend=top-left">
  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=SSoggy-Group/AI-Chat-Export&type=date&legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=SSoggyTacoMan/AI-Chat-Export&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=SSoggyTacoMan/AI-Chat-Export&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=SSoggyTacoMan/AI-Chat-Export&type=date&legend=top-left" />
  </picture>
 </a>
 <!-- markdownlint-enable MD033 -->
