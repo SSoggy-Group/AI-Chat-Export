@@ -1,6 +1,9 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { chatsSchema } from '../../../database/schema';
 
+const VALID_SOURCES_ARRAY = ['user', 'claude', 'chatgpt', 'deepseek', 'mistral', 'gemini', 'qwen', 'meta', 'perplexity', 'google'];
+const VALID_SOURCES = new Set(VALID_SOURCES_ARRAY);
+
 export async function onRequestGet() {
     return new Response('welcome to Claudeshare 🚀, powered by React, Drizzle ORM, and D1, running on Cloudflare Workers');
 }
@@ -17,14 +20,15 @@ export async function onRequestPost(context) {
             return Response.json({ msg: 'content must be an array' }, { status: 400 });
         }
 
-        const sanitizedContent = [];
-        for (const item of content) {
+        const len = content.length;
+        const sanitizedContent = new Array(len);
+        for (let i = 0; i < len; i++) {
+            const item = content[i];
             if (typeof item !== 'object' || item === null || Array.isArray(item)) {
                 return Response.json({ msg: 'content items must be objects' }, { status: 400 });
             }
-            const validSources = ['user', 'claude', 'chatgpt', 'deepseek', 'mistral', 'gemini', 'qwen', 'meta', 'perplexity', 'google'];
-            if (typeof item.source !== 'string' || !validSources.includes(item.source)) {
-                return Response.json({ msg: `content item source must be one of: ${validSources.join(', ')}` }, { status: 400 });
+            if (typeof item.source !== 'string' || !VALID_SOURCES.has(item.source)) {
+                return Response.json({ msg: `content item source must be one of: ${VALID_SOURCES_ARRAY.join(', ')}` }, { status: 400 });
             }
             if (typeof item.message !== 'string') {
                 return Response.json({ msg: 'content item message must be a string' }, { status: 400 });
@@ -36,7 +40,7 @@ export async function onRequestPost(context) {
             if (typeof item.thinking === 'string' && item.thinking.trim()) {
                 sanitized.thinking = item.thinking;
             }
-            sanitizedContent.push(sanitized);
+            sanitizedContent[i] = sanitized;
         }
 
         const [newChat] = await db.insert(chatsSchema).values({ title, content: sanitizedContent }).returning()
