@@ -1,3 +1,7 @@
+function throwNotImplemented() {
+  throw new Error('Not implemented');
+}
+
 export class ExportFormatter {
   constructor() {}
 
@@ -7,14 +11,14 @@ export class ExportFormatter {
    * @returns {string} The formatted content
    */
   format(_conversation) {
-    throw new Error('Not implemented');
+    throwNotImplemented();
   }
 
   getFileExtension() {
-    throw new Error('Not implemented');
+    throwNotImplemented();
   }
 
   getMimeType() {
-    throw new Error('Not implemented');
+    throwNotImplemented();
   }
 }
